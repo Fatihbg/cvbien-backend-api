@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 8080
 
 # Commande de démarrage
-CMD ["sh", "-c", "python -m uvicorn main_auth:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["python", "start.py"]

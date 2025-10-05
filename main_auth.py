@@ -595,4 +595,5 @@ async def get_all_users():
 if __name__ == "__main__":
     init_db()
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
