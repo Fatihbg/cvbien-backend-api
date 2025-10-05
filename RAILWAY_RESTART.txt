@@ -1,0 +1,4 @@
+RAILWAY RESTART REQUIRED - 19:20
+OpenAI client fix without proxies argument
+Version 2.2.0
+FORCE CONTAINER RESTART
