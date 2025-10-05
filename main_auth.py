@@ -600,6 +600,29 @@ async def get_all_users():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données")
 
+# Endpoint pour optimiser un CV
+@app.post("/optimize-cv")
+async def optimize_cv(request: dict):
+    try:
+        # Simulation d'optimisation de CV
+        return {
+            "success": True,
+            "message": "CV optimisé avec succès",
+            "optimized_cv": {
+                "title": "CV Optimisé",
+                "content": "Contenu optimisé du CV...",
+                "score": 85,
+                "suggestions": [
+                    "Ajoutez plus de mots-clés techniques",
+                    "Améliorez la structure des sections",
+                    "Quantifiez vos réalisations"
+                ]
+            }
+        }
+    except Exception as e:
+        print(f"❌ Erreur optimisation CV: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'optimisation du CV")
+
 if __name__ == "__main__":
     init_db()
     import uvicorn
