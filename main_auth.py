@@ -860,22 +860,23 @@ async def generate_pdf(cv_text: str = Form(...)):
         doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
         
-        # Styles professionnels compacts comme l'image
+        # Styles professionnels comme l'image avec bleu sérieux
         name_style = ParagraphStyle(
             'NameStyle',
             parent=styles['Heading1'],
             fontSize=16,
             leading=18,
-            textColor='#000000',
+            textColor='#1e3a8a',  # Bleu sérieux
             alignment=0,  # Aligné à gauche
-            spaceAfter=6
+            spaceAfter=6,
+            fontName='Helvetica-Bold'
         )
         
         contact_style = ParagraphStyle(
             'ContactStyle',
             parent=styles['Normal'],
-            fontSize=9,
-            leading=10,
+            fontSize=8,  # Plus petit que l'image
+            leading=9,
             textColor='#000000',
             alignment=0,  # Aligné à gauche
             spaceAfter=8
@@ -886,7 +887,7 @@ async def generate_pdf(cv_text: str = Form(...)):
             parent=styles['Heading2'],
             fontSize=11,
             leading=12,
-            textColor='#000000',
+            textColor='#1e3a8a',  # Bleu sérieux
             spaceBefore=6,
             spaceAfter=4,
             fontName='Helvetica-Bold'
@@ -895,8 +896,8 @@ async def generate_pdf(cv_text: str = Form(...)):
         job_title_style = ParagraphStyle(
             'JobTitleStyle',
             parent=styles['Normal'],
-            fontSize=10,
-            leading=11,
+            fontSize=11,  # Plus grand que l'image
+            leading=12,
             textColor='#000000',
             spaceAfter=2,
             fontName='Helvetica-Bold'
@@ -978,21 +979,23 @@ async def generate_pdf(cv_text: str = Form(...)):
                 i += 1
                 continue
                 
-            # Détecter les postes/titres (ligne suivie d'une entreprise)
+            # Détecter les postes/titres (ligne suivie d'une entreprise ou dates)
             if (current_section and ('EXPERIENCE' in current_section or 'PROJECTS' in current_section) and
-                i + 1 < len(lines) and not lines[i + 1].strip().startswith('•') and 
-                not lines[i + 1].strip().startswith('-') and lines[i + 1].strip() and
-                len(line) > 5 and len(line) < 80):
-                # Poste avec entreprise sur la même ligne ou ligne suivante
-                if ' - ' in line:
-                    parts = line.split(' - ', 1)
-                    story.append(Paragraph(parts[0], job_title_style))
-                    if len(parts) > 1:
-                        story.append(Paragraph(parts[1], company_style))
-                else:
-                    story.append(Paragraph(line, job_title_style))
-                i += 1
-                continue
+                len(line) > 5 and len(line) < 80 and not line.startswith('•') and not line.startswith('-')):
+                # Vérifier si c'est un poste (contient des mots-clés de postes)
+                job_keywords = ['analyst', 'consultant', 'developer', 'manager', 'engineer', 'specialist', 'coordinator', 
+                              'director', 'lead', 'senior', 'junior', 'intern', 'assistant', 'ceo', 'founder', 'owner']
+                if any(keyword in line.lower() for keyword in job_keywords):
+                    # Poste avec entreprise sur la même ligne ou ligne suivante
+                    if ' - ' in line:
+                        parts = line.split(' - ', 1)
+                        story.append(Paragraph(parts[0], job_title_style))
+                        if len(parts) > 1:
+                            story.append(Paragraph(parts[1], company_style))
+                    else:
+                        story.append(Paragraph(line, job_title_style))
+                    i += 1
+                    continue
                 
             # Détecter les dates (format avec mois/année ou années)
             if (re.match(r'^[A-Za-z]{3}\s+\d{4}', line) or 
