@@ -638,9 +638,9 @@ async def optimize_cv(
             import openai
             
             # Configuration OpenAI
-            openai.api_key = os.getenv("OPENAI_API_KEY")
+            api_key = os.getenv("OPENAI_API_KEY")
             
-            if not openai.api_key:
+            if not api_key:
                 raise Exception("Clé API OpenAI manquante")
             
             print(f"🤖 Génération CV avec OpenAI...")
@@ -755,7 +755,7 @@ DESCRIPTION DU POSTE:
 Génère maintenant le CV optimisé en respectant TOUTES ces instructions."""
             
             # Nouvelle API OpenAI 1.0+
-            client = openai.OpenAI(api_key=openai.api_key)
+            client = openai.OpenAI(api_key=api_key)
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
@@ -895,13 +895,13 @@ async def test_openai():
     """Test endpoint pour vérifier la configuration OpenAI"""
     try:
         import openai
-        openai.api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
         
-        if not openai.api_key:
+        if not api_key:
             return {"error": "Clé API OpenAI manquante", "has_key": False}
         
         # Test simple avec OpenAI (nouvelle API)
-        client = openai.OpenAI(api_key=openai.api_key)
+        client = openai.OpenAI(api_key=api_key)
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": "Test"}],
@@ -911,7 +911,7 @@ async def test_openai():
         return {
             "success": True,
             "has_key": True,
-            "key_preview": openai.api_key[:10] + "...",
+            "key_preview": api_key[:10] + "...",
             "test_response": response.choices[0].message.content
         }
     except Exception as e:
