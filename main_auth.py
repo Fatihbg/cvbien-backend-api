@@ -745,6 +745,18 @@ async def optimize_cv(
 
 15. **Objectif de Page Unique (CRITIQUE) :** Le CV doit tenir sur **UNE PAGE COMPLÈTE** (pas la moitié de page). Utilise un phrasé concis mais informatif pour remplir la page entière.
 
+**🚨 CONTENU DÉTAILLÉ OBLIGATOIRE - PRIORITÉ MAXIMALE 🚨**
+- **Chaque expérience** : Ajoute 2-3 descriptions détaillées avec des actions concrètes et des résultats
+- **Chaque formation** : Ajoute 2-3 lignes décrivant les compétences acquises et leur application
+- **Résumé professionnel** : 4-5 lignes détaillées, pas juste 2-3 phrases
+- **Compétences** : Ajoute BEAUCOUP de compétences pertinentes, pas juste les basiques
+- **Réalisations** : Quantifie et détaille chaque réalisation avec des chiffres concrets
+- **Descriptions** : Utilise des verbes d'action forts et des termes techniques du secteur
+- **Exemples** : "Géré un portefeuille de 50 clients" au lieu de "Gestion de clients"
+- **Impact** : Montre l'impact de chaque action ("Augmentation de 25% des ventes")
+- **Responsabilités** : Détaille les responsabilités principales et secondaires
+- **Projets** : Mentionne des projets concrets et leurs résultats
+
 16. **Titres de Section :** Chaque titre de section doit être **écrit en MAJUSCULES**.
 
 CV ORIGINAL:
