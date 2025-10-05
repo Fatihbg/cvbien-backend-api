@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
@@ -600,20 +600,38 @@ async def get_all_users():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données")
 
-# Endpoint pour optimiser un CV (version flexible)
+# Endpoint pour optimiser un CV (version flexible - accepte FormData ou JSON)
 @app.post("/optimize-cv")
-async def optimize_cv(request: dict):
+async def optimize_cv(
+    request: Request,
+    cv_file: Optional[UploadFile] = File(None),
+    job_offer: Optional[str] = Form(None)
+):
     try:
-        print(f"📝 Données reçues: {request}")
+        print(f"📝 Requête reçue - Content-Type: {request.headers.get('content-type', 'unknown')}")
         
-        # Extraire le contenu du CV de différentes façons possibles
         cv_content = ""
-        if isinstance(request, dict):
-            cv_content = request.get("cv_content", "") or request.get("content", "") or request.get("text", "") or str(request)
-        else:
-            cv_content = str(request)
         
-        print(f"📝 Contenu CV extrait: {len(cv_content)} caractères")
+        # Vérifier si c'est du FormData (fichier uploadé)
+        if cv_file is not None:
+            print(f"📁 Fichier reçu: {cv_file.filename}")
+            cv_content = await cv_file.read()
+            if isinstance(cv_content, bytes):
+                cv_content = cv_content.decode('utf-8')
+            print(f"📝 Contenu du fichier: {len(cv_content)} caractères")
+        else:
+            # Essayer de lire du JSON
+            try:
+                json_data = await request.json()
+                print(f"📝 JSON reçu: {json_data}")
+                cv_content = json_data.get("cv_content", "") or json_data.get("content", "") or json_data.get("text", "") or str(json_data)
+                print(f"📝 Contenu JSON extrait: {len(cv_content)} caractères")
+            except:
+                print("📝 Pas de JSON valide, utilisation de données brutes")
+                cv_content = "Contenu CV simulé pour test"
+        
+        if not cv_content:
+            cv_content = "Contenu CV par défaut"
         
         # Simulation d'optimisation de CV
         return {
