@@ -860,14 +860,14 @@ async def generate_pdf(cv_text: str = Form(...)):
         doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
         
-        # Styles professionnels comme l'image avec bleu sérieux
+        # Styles professionnels avec header centré
         name_style = ParagraphStyle(
             'NameStyle',
             parent=styles['Heading1'],
             fontSize=16,
             leading=18,
             textColor='#1e3a8a',  # Bleu sérieux
-            alignment=0,  # Aligné à gauche
+            alignment=1,  # CENTRÉ
             spaceAfter=6,
             fontName='Helvetica-Bold'
         )
@@ -878,18 +878,30 @@ async def generate_pdf(cv_text: str = Form(...)):
             fontSize=8,  # Plus petit que l'image
             leading=9,
             textColor='#000000',
-            alignment=0,  # Aligné à gauche
+            alignment=1,  # CENTRÉ
             spaceAfter=8
+        )
+        
+        # Nouveau style pour le rôle - plus grand et centré
+        role_style = ParagraphStyle(
+            'RoleStyle',
+            parent=styles['Normal'],
+            fontSize=14,  # Plus grand
+            leading=16,
+            textColor='#000000',
+            alignment=1,  # CENTRÉ
+            spaceAfter=12,
+            fontName='Helvetica-Bold'
         )
         
         section_style = ParagraphStyle(
             'SectionStyle',
             parent=styles['Heading2'],
-            fontSize=11,
-            leading=12,
+            fontSize=10,  # Plus petit
+            leading=11,
             textColor='#1e3a8a',  # Bleu sérieux
-            spaceBefore=6,
-            spaceAfter=4,
+            spaceBefore=12,  # Plus d'espace avant
+            spaceAfter=6,  # Plus d'espace après
             fontName='Helvetica-Bold'
         )
         
@@ -941,39 +953,73 @@ async def generate_pdf(cv_text: str = Form(...)):
             spaceAfter=2
         )
         
-        # Parser intelligent pour formatage professionnel compact
+        # Parser intelligent pour formatage professionnel avec header centré
         lines = cv_text.split('\n')
         story = []
         
         i = 0
         current_section = ''
+        header_done = False
         
         while i < len(lines):
             line = lines[i].strip()
             if not line:
                 i += 1
                 continue
-                
-            # Détecter le nom (ligne en majuscules, pas trop longue, pas une section)
-            if (line.isupper() and len(line) < 50 and len(line) > 3 and 
-                not line.startswith('PROFESSIONAL') and not line.startswith('EXPERIENCE') and 
-                not line.startswith('EDUCATION') and not line.startswith('SKILLS')):
-                story.append(Paragraph(line, name_style))
-                i += 1
-                continue
-                
-            # Détecter les contacts (contient @ ou | ou téléphone)
-            if ('@' in line or '|' in line or 
-                any(char.isdigit() for char in line) and len(line) > 5):
-                story.append(Paragraph(line, contact_style))
-                i += 1
-                continue
-                
+            
+            # PHASE 1: Header centré (nom, contact, rôle)
+            if not header_done:
+                # Détecter le nom (ligne en majuscules, pas trop longue, pas une section)
+                if (line.isupper() and len(line) < 50 and len(line) > 3 and 
+                    not line.startswith('PROFESSIONAL') and not line.startswith('EXPERIENCE') and 
+                    not line.startswith('EDUCATION') and not line.startswith('SKILLS')):
+                    story.append(Paragraph(line, name_style))
+                    i += 1
+                    continue
+                    
+                # Détecter les contacts (contient @ ou | ou téléphone)
+                elif ('@' in line or '|' in line or 
+                      any(char.isdigit() for char in line) and len(line) > 5):
+                    story.append(Paragraph(line, contact_style))
+                    i += 1
+                    continue
+                    
+                # Détecter le rôle (ligne après contact, pas une section)
+                elif (len(line) > 5 and len(line) < 80 and 
+                      not line.startswith('PROFESSIONAL') and not line.startswith('EXPERIENCE') and 
+                      not line.startswith('EDUCATION') and not line.startswith('SKILLS') and
+                      not line.startswith('RÉSUMÉ') and not line.startswith('SUMMARY')):
+                    story.append(Paragraph(line, role_style))
+                    i += 1
+                    continue
+                    
+                # Fin du header quand on arrive à une section ou résumé
+                elif (line.startswith('PROFESSIONAL SUMMARY') or line.startswith('RÉSUMÉ PROFESSIONNEL') or
+                      line.startswith('PROFESSIONAL EXPERIENCE') or line.startswith('EXPÉRIENCE PROFESSIONNELLE')):
+                    header_done = True
+                    # Ignorer "PROFESSIONAL SUMMARY" - on ne l'affiche pas
+                    if line.startswith('PROFESSIONAL SUMMARY') or line.startswith('RÉSUMÉ PROFESSIONNEL'):
+                        i += 1
+                        continue
+                    # Continuer avec la section suivante
+                    continue
+                    
+                else:
+                    i += 1
+                    continue
+            
+            # PHASE 2: Sections avec lignes horizontales
             # Détecter les titres de section
-            if (line in ['PROFESSIONAL SUMMARY', 'PROFESSIONAL EXPERIENCE', 'EDUCATION', 'TECHNICAL SKILLS', 
+            if (line in ['PROFESSIONAL EXPERIENCE', 'EDUCATION', 'TECHNICAL SKILLS', 
                         'CERTIFICATIONS & ACHIEVEMENTS', 'EXPÉRIENCE PROFESSIONNELLE', 'FORMATION', 
-                        'COMPÉTENCES', 'COMPETENCES', 'RÉSUMÉ PROFESSIONNEL', 'PROJECTS', 'OTHER'] or 
+                        'COMPÉTENCES', 'COMPETENCES', 'PROJECTS', 'OTHER'] or 
                 line.endswith('EXPERIENCE') or line.endswith('FORMATION') or line.endswith('SKILLS')):
+                
+                # Ajouter la ligne horizontale avant le titre
+                from reportlab.platypus import HRFlowable
+                story.append(HRFlowable(width="100%", thickness=1, color='#1e3a8a'))
+                story.append(Spacer(1, 6))
+                
                 story.append(Paragraph(line, section_style))
                 current_section = line
                 i += 1
