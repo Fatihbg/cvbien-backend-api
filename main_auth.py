@@ -600,17 +600,20 @@ async def get_all_users():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données")
 
-# Modèle pour l'optimisation de CV
-class CVOptimizationRequest(BaseModel):
-    cv_content: str
-    job_description: Optional[str] = None
-    user_id: Optional[str] = None
-
-# Endpoint pour optimiser un CV
+# Endpoint pour optimiser un CV (version flexible)
 @app.post("/optimize-cv")
-async def optimize_cv(request: CVOptimizationRequest):
+async def optimize_cv(request: dict):
     try:
-        print(f"📝 Optimisation CV reçue: {len(request.cv_content)} caractères")
+        print(f"📝 Données reçues: {request}")
+        
+        # Extraire le contenu du CV de différentes façons possibles
+        cv_content = ""
+        if isinstance(request, dict):
+            cv_content = request.get("cv_content", "") or request.get("content", "") or request.get("text", "") or str(request)
+        else:
+            cv_content = str(request)
+        
+        print(f"📝 Contenu CV extrait: {len(cv_content)} caractères")
         
         # Simulation d'optimisation de CV
         return {
@@ -618,7 +621,7 @@ async def optimize_cv(request: CVOptimizationRequest):
             "message": "CV optimisé avec succès",
             "optimized_cv": {
                 "title": "CV Optimisé",
-                "content": f"Contenu optimisé du CV basé sur: {request.cv_content[:100]}...",
+                "content": f"Contenu optimisé du CV basé sur: {cv_content[:100]}...",
                 "score": 85,
                 "suggestions": [
                     "Ajoutez plus de mots-clés techniques",
@@ -626,8 +629,8 @@ async def optimize_cv(request: CVOptimizationRequest):
                     "Quantifiez vos réalisations",
                     "Utilisez des verbes d'action"
                 ],
-                "original_length": len(request.cv_content),
-                "optimized_length": len(request.cv_content) + 200
+                "original_length": len(cv_content),
+                "optimized_length": len(cv_content) + 200
             }
         }
     except Exception as e:
