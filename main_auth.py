@@ -856,11 +856,13 @@ async def generate_pdf(cv_text: str = Form(...)):
         # Créer un buffer pour le PDF
         buffer = io.BytesIO()
         
-        # Créer le document PDF
-        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        # Créer le document PDF avec marges réduites
+        doc = SimpleDocTemplate(buffer, pagesize=letter, 
+                               leftMargin=0.5*inch, rightMargin=0.5*inch,
+                               topMargin=0.5*inch, bottomMargin=0.5*inch)
         styles = getSampleStyleSheet()
         
-        # Styles professionnels avec header centré
+        # Styles professionnels avec header centré et espacement compact
         name_style = ParagraphStyle(
             'NameStyle',
             parent=styles['Heading1'],
@@ -868,7 +870,7 @@ async def generate_pdf(cv_text: str = Form(...)):
             leading=18,
             textColor='#1e3a8a',  # Bleu sérieux
             alignment=1,  # CENTRÉ
-            spaceAfter=6,
+            spaceAfter=3,  # Réduit
             fontName='Helvetica-Bold'
         )
         
@@ -879,7 +881,7 @@ async def generate_pdf(cv_text: str = Form(...)):
             leading=9,
             textColor='#000000',
             alignment=1,  # CENTRÉ
-            spaceAfter=8
+            spaceAfter=4  # Réduit
         )
         
         # Nouveau style pour le rôle - plus grand et centré
@@ -890,7 +892,7 @@ async def generate_pdf(cv_text: str = Form(...)):
             leading=16,
             textColor='#000000',
             alignment=1,  # CENTRÉ
-            spaceAfter=12,
+            spaceAfter=6,  # Réduit
             fontName='Helvetica-Bold'
         )
         
@@ -900,57 +902,69 @@ async def generate_pdf(cv_text: str = Form(...)):
             fontSize=10,  # Plus petit
             leading=11,
             textColor='#1e3a8a',  # Bleu sérieux
-            spaceBefore=12,  # Plus d'espace avant
-            spaceAfter=6,  # Plus d'espace après
+            spaceBefore=6,  # Réduit
+            spaceAfter=3,  # Réduit
             fontName='Helvetica-Bold'
         )
         
         job_title_style = ParagraphStyle(
             'JobTitleStyle',
             parent=styles['Normal'],
-            fontSize=11,  # Plus grand que l'image
-            leading=12,
+            fontSize=10,  # Réduit
+            leading=11,
             textColor='#000000',
-            spaceAfter=2,
+            spaceAfter=1,  # Réduit
             fontName='Helvetica-Bold'
         )
         
         company_style = ParagraphStyle(
             'CompanyStyle',
             parent=styles['Normal'],
-            fontSize=10,
-            leading=11,
+            fontSize=9,  # Réduit
+            leading=10,
             textColor='#000000',
-            spaceAfter=2
+            spaceAfter=1  # Réduit
         )
         
         date_style = ParagraphStyle(
             'DateStyle',
             parent=styles['Normal'],
-            fontSize=9,
-            leading=10,
+            fontSize=8,  # Réduit
+            leading=9,
             textColor='#000000',
             alignment=2,  # Aligné à droite
-            spaceAfter=2
+            spaceAfter=1  # Réduit
         )
         
         bullet_style = ParagraphStyle(
             'BulletStyle',
             parent=styles['Normal'],
-            fontSize=9,
-            leading=10,
+            fontSize=8,  # Réduit
+            leading=9,  # Réduit
             textColor='#000000',
-            leftIndent=12,
-            spaceAfter=1
+            leftIndent=10,  # Réduit
+            spaceAfter=0.5,  # Très réduit
+            bulletIndent=6  # Réduit
         )
         
         normal_style = ParagraphStyle(
             'NormalStyle',
             parent=styles['Normal'],
-            fontSize=9,
-            leading=10,
+            fontSize=8,  # Réduit
+            leading=9,  # Réduit
             textColor='#000000',
-            spaceAfter=2
+            spaceAfter=1  # Réduit
+        )
+        
+        # Style pour le résumé professionnel - plus compact
+        summary_style = ParagraphStyle(
+            'SummaryStyle',
+            parent=styles['Normal'],
+            fontSize=8,  # Petit
+            leading=10,  # Compact
+            textColor='#000000',
+            spaceAfter=4,  # Espacement après le résumé
+            alignment=0  # Justifié
         )
         
         # Parser intelligent pour formatage professionnel avec header centré
@@ -999,7 +1013,14 @@ async def generate_pdf(cv_text: str = Form(...)):
                     header_done = True
                     # Ignorer "PROFESSIONAL SUMMARY" - on ne l'affiche pas
                     if line.startswith('PROFESSIONAL SUMMARY') or line.startswith('RÉSUMÉ PROFESSIONNEL'):
+                        # Lire le contenu du résumé sans l'afficher comme titre
                         i += 1
+                        summary_content = ""
+                        while i < len(lines) and lines[i].strip() and not lines[i].strip().startswith(('PROFESSIONAL EXPERIENCE', 'EDUCATION', 'TECHNICAL SKILLS')):
+                            summary_content += lines[i].strip() + " "
+                            i += 1
+                        if summary_content.strip():
+                            story.append(Paragraph(summary_content.strip(), summary_style))
                         continue
                     # Continuer avec la section suivante
                     continue
@@ -1017,8 +1038,8 @@ async def generate_pdf(cv_text: str = Form(...)):
                 
                 # Ajouter la ligne horizontale avant le titre
                 from reportlab.platypus import HRFlowable
-                story.append(HRFlowable(width="100%", thickness=1, color='#1e3a8a'))
-                story.append(Spacer(1, 6))
+                story.append(HRFlowable(width="100%", thickness=0.5, color='#1e3a8a'))
+                story.append(Spacer(1, 2))  # Réduit
                 
                 story.append(Paragraph(line, section_style))
                 current_section = line
