@@ -837,6 +837,32 @@ FORMATION:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de l'optimisation du CV")
 
+@app.get("/test-openai")
+async def test_openai():
+    """Test endpoint pour vérifier la configuration OpenAI"""
+    try:
+        import openai
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        
+        if not openai.api_key:
+            return {"error": "Clé API OpenAI manquante", "has_key": False}
+        
+        # Test simple avec OpenAI
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": "Test"}],
+            max_tokens=10
+        )
+        
+        return {
+            "success": True,
+            "has_key": True,
+            "key_preview": openai.api_key[:10] + "...",
+            "test_response": response.choices[0].message.content
+        }
+    except Exception as e:
+        return {"error": str(e), "has_key": bool(os.getenv("OPENAI_API_KEY"))}
+
 if __name__ == "__main__":
     init_db()
     import uvicorn
