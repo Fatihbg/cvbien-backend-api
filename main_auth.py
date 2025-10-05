@@ -895,7 +895,7 @@ async def generate_pdf(cv_text: str = Form(...)):
 
 @app.get("/version")
 async def get_version():
-    return {"version": "2.0.0", "status": "OpenAI 1.0+ Compatible", "timestamp": "2025-01-05"}
+    return {"version": "2.1.0", "status": "OpenAI 1.0+ Compatible - FORCE REDEPLOY", "timestamp": "2025-01-05 19:15", "fix": "OpenAI client without proxies"}
 
 @app.get("/test-openai")
 async def test_openai():
