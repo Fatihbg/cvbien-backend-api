@@ -1101,9 +1101,50 @@ async def generate_pdf(cv_text: str = Form(...)):
         print(f"❌ Erreur génération PDF: {e}")
         return {"success": False, "error": str(e)}
 
+@app.post("/extract-pdf")
+async def extract_pdf(cv_file: UploadFile = File(...)):
+    """Endpoint pour extraire le texte d'un PDF"""
+    try:
+        print(f"📄 Extraction PDF: {cv_file.filename}")
+        
+        # Lire le contenu du fichier
+        content = await cv_file.read()
+        
+        # Extraire le texte avec PyPDF2
+        try:
+            import PyPDF2
+            import io
+            
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+            text = ""
+            
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                text += page.extract_text() + "\n"
+            
+            return {
+                "success": True,
+                "text": text.strip(),
+                "pages": len(pdf_reader.pages)
+            }
+            
+        except Exception as e:
+            print(f"❌ Erreur extraction PyPDF2: {e}")
+            return {
+                "success": False,
+                "error": f"Erreur extraction PDF: {str(e)}"
+            }
+            
+    except Exception as e:
+        print(f"❌ Erreur générale extraction: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 @app.get("/version")
 async def get_version():
-    return {"version": "2.4.0", "status": "OpenAI 1.0+ Compatible - ULTIMATE FIX", "timestamp": "2025-01-05 19:40", "fix": "OpenAI client without proxies - ULTIMATE", "action": "ULTIMATE_DEPLOY"}
+    return {"version": "2.5.0", "status": "PDF Extraction Added", "timestamp": "2025-01-05 23:20", "fix": "Added /extract-pdf endpoint", "action": "PDF_EXTRACTION_DEPLOY"}
 
 @app.get("/test-openai")
 async def test_openai():
