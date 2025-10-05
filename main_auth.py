@@ -859,22 +859,95 @@ async def generate_pdf(cv_text: str = Form(...)):
         doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
         
-        # Style personnalisé
-        custom_style = ParagraphStyle(
-            'CustomStyle',
+        # Styles personnalisés
+        title_style = ParagraphStyle(
+            'TitleStyle',
+            parent=styles['Heading1'],
+            fontSize=18,
+            leading=22,
+            textColor='#1e40af',
+            alignment=1,  # Centré
+            spaceAfter=12
+        )
+        
+        name_style = ParagraphStyle(
+            'NameStyle',
+            parent=styles['Heading1'],
+            fontSize=20,
+            leading=24,
+            textColor='#2563eb',
+            alignment=1,  # Centré
+            spaceAfter=8
+        )
+        
+        contact_style = ParagraphStyle(
+            'ContactStyle',
             parent=styles['Normal'],
             fontSize=10,
             leading=12,
+            textColor='#4b5563',
+            alignment=1,  # Centré
+            spaceAfter=12
         )
         
-        # Diviser le texte en paragraphes
-        paragraphs = cv_text.split('\n')
+        section_style = ParagraphStyle(
+            'SectionStyle',
+            parent=styles['Heading2'],
+            fontSize=14,
+            leading=18,
+            textColor='#1e40af',
+            spaceBefore=12,
+            spaceAfter=8
+        )
+        
+        normal_style = ParagraphStyle(
+            'NormalStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            leading=12,
+            textColor='#374151',
+            spaceAfter=4
+        )
+        
+        # Parser le CV pour un formatage intelligent
+        lines = cv_text.split('\n')
         story = []
         
-        for para in paragraphs:
-            if para.strip():
-                story.append(Paragraph(para.strip(), custom_style))
-                story.append(Spacer(1, 6))
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            if not line:
+                i += 1
+                continue
+                
+            # Détecter le nom (ligne en majuscules, pas trop longue)
+            if line.isupper() and len(line) < 50 and len(line) > 3 and not line.startswith('PROFESSIONAL'):
+                story.append(Paragraph(line, name_style))
+                i += 1
+                continue
+                
+            # Détecter les contacts (contient @ ou |)
+            if '@' in line or '|' in line:
+                story.append(Paragraph(line, contact_style))
+                i += 1
+                continue
+                
+            # Détecter les titres de section
+            if (line in ['PROFESSIONAL SUMMARY', 'PROFESSIONAL EXPERIENCE', 'EDUCATION', 'TECHNICAL SKILLS', 
+                        'CERTIFICATIONS & ACHIEVEMENTS', 'EXPÉRIENCE PROFESSIONNELLE', 'FORMATION', 
+                        'COMPÉTENCES', 'COMPETENCES', 'RÉSUMÉ PROFESSIONNEL'] or 
+                line.endswith('EXPERIENCE') or line.endswith('FORMATION') or line.endswith('SKILLS')):
+                story.append(Paragraph(line, section_style))
+                i += 1
+                continue
+                
+            # Texte normal
+            if line.startswith('•') or line.startswith('-'):
+                # Formatage pour les puces
+                story.append(Paragraph(f"&nbsp;&nbsp;&nbsp;{line}", normal_style))
+            else:
+                story.append(Paragraph(line, normal_style))
+            i += 1
         
         # Construire le PDF
         doc.build(story)
@@ -895,7 +968,7 @@ async def generate_pdf(cv_text: str = Form(...)):
 
 @app.get("/version")
 async def get_version():
-    return {"version": "2.3.0", "status": "OpenAI 1.0+ Compatible - FINAL FIX", "timestamp": "2025-01-05 19:35", "fix": "OpenAI client without proxies - WORKING", "action": "FINAL_DEPLOY"}
+    return {"version": "2.4.0", "status": "OpenAI 1.0+ Compatible - ULTIMATE FIX", "timestamp": "2025-01-05 19:40", "fix": "OpenAI client without proxies - ULTIMATE", "action": "ULTIMATE_DEPLOY"}
 
 @app.get("/test-openai")
 async def test_openai():
