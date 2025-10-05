@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Exposer le port
-EXPOSE 8000
+EXPOSE 8080
 
 # Commande de démarrage
-CMD ["sh", "-c", "python -m uvicorn main_auth:app --host 0.0.0.0 --port $PORT"]
+CMD ["sh", "-c", "python -m uvicorn main_auth:app --host 0.0.0.0 --port ${PORT:-8080}"]
