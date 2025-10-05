@@ -837,6 +837,57 @@ FORMATION:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de l'optimisation du CV")
 
+@app.post("/generate-pdf")
+async def generate_pdf(cv_text: str = Form(...)):
+    """Endpoint pour générer un PDF à partir du texte du CV"""
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        import io
+        
+        # Créer un buffer pour le PDF
+        buffer = io.BytesIO()
+        
+        # Créer le document PDF
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        
+        # Style personnalisé
+        custom_style = ParagraphStyle(
+            'CustomStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            leading=12,
+        )
+        
+        # Diviser le texte en paragraphes
+        paragraphs = cv_text.split('\n')
+        story = []
+        
+        for para in paragraphs:
+            if para.strip():
+                story.append(Paragraph(para.strip(), custom_style))
+                story.append(Spacer(1, 6))
+        
+        # Construire le PDF
+        doc.build(story)
+        
+        # Récupérer le contenu du PDF
+        pdf_content = buffer.getvalue()
+        buffer.close()
+        
+        return {
+            "success": True,
+            "pdf_content": pdf_content.hex(),  # Convertir en hex pour JSON
+            "filename": "cv_optimise.pdf"
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur génération PDF: {e}")
+        return {"success": False, "error": str(e)}
+
 @app.get("/test-openai")
 async def test_openai():
     """Test endpoint pour vérifier la configuration OpenAI"""
