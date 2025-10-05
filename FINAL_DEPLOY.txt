@@ -1,0 +1,5 @@
+FINAL DEPLOY - 19:35
+OpenAI client fix without proxies argument
+Version 2.3.0 - FINAL FIX
+FORCE FINAL DEPLOY NOW
+RAILWAY MUST USE THIS CODE

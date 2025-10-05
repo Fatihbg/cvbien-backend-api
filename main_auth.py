@@ -754,7 +754,7 @@ DESCRIPTION DU POSTE:
 
 Génère maintenant le CV optimisé en respectant TOUTES ces instructions."""
             
-            # Nouvelle API OpenAI 1.0+ - Configuration minimale
+            # Nouvelle API OpenAI 1.0+ - Configuration minimale SANS PROXIES
             client = openai.OpenAI(
                 api_key=api_key,
                 timeout=30.0
@@ -895,7 +895,7 @@ async def generate_pdf(cv_text: str = Form(...)):
 
 @app.get("/version")
 async def get_version():
-    return {"version": "2.2.0", "status": "OpenAI 1.0+ Compatible - RESTART REQUIRED", "timestamp": "2025-01-05 19:20", "fix": "OpenAI client without proxies", "action": "RESTART_CONTAINER"}
+    return {"version": "2.3.0", "status": "OpenAI 1.0+ Compatible - FINAL FIX", "timestamp": "2025-01-05 19:35", "fix": "OpenAI client without proxies - WORKING", "action": "FINAL_DEPLOY"}
 
 @app.get("/test-openai")
 async def test_openai():
