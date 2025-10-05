@@ -748,19 +748,26 @@ async def optimize_cv(
 **🚨 CONTENU DÉTAILLÉ OBLIGATOIRE - PRIORITÉ MAXIMALE 🚨**
 
 **📝 PHRASES LONGUES ET DÉTAILLÉES OBLIGATOIRES :**
-- **Chaque expérience** : Ajoute 2-3 PHRASES TRÈS LONGUES (15-25 mots chacune) avec des actions concrètes, des résultats quantifiés, et des impacts mesurables
-- **Chaque formation** : Ajoute 2-3 PHRASES TRÈS LONGUES (15-25 mots chacune) décrivant les compétences acquises, leur application pratique, et leur pertinence pour le poste
+- **Chaque expérience** : Ajoute 3-4 PHRASES TRÈS LONGUES (20-30 mots chacune) avec des actions concrètes, des résultats quantifiés avec CHIFFRES et POURCENTAGES, et des impacts mesurables
+- **Chaque formation** : Ajoute 3-4 PHRASES TRÈS LONGUES (20-30 mots chacune) décrivant les compétences acquises, leur application pratique, et leur pertinence pour le poste avec des détails concrets
 - **Résumé professionnel** : 2-3 phrases détaillées et persuasives (pas plus, c'est suffisant)
 - **Compétences** : Ajoute BEAUCOUP de compétences pertinentes avec des niveaux de maîtrise
-- **Réalisations** : Quantifie et détaille chaque réalisation avec des chiffres concrets et des métriques
+- **Réalisations OBLIGATOIRES avec CHIFFRES** : Quantifie et détaille chaque réalisation avec des chiffres concrets, des pourcentages, des montants, des volumes, des délais, etc.
 - **Descriptions** : Utilise des verbes d'action forts, des termes techniques du secteur, et des contextes spécifiques
-- **Exemples de phrases longues** : 
-  * Au lieu de "Gestion de clients" → "Gestion complète d'un portefeuille de 50+ clients B2B, incluant la négociation de contrats, le suivi des performances, et l'optimisation des relations commerciales"
-  * Au lieu de "Formation en management" → "Formation approfondie en management stratégique et leadership, incluant la gestion d'équipes pluridisciplinaires, l'élaboration de stratégies d'entreprise, et l'optimisation des processus opérationnels"
+- **CHIFFRES ET POURCENTAGES OBLIGATOIRES** : Chaque description d'expérience DOIT contenir au moins 2-3 chiffres concrets :
+  * Nombre de clients/projets gérés (ex: "50+ clients", "15 projets")
+  * Pourcentages d'amélioration (ex: "+25% d'efficacité", "+40% de satisfaction client")
+  * Montants/budgets (ex: "budget de 500K€", "économie de 50K€")
+  * Délais (ex: "réduction de 30% des délais", "livraison en 2 semaines")
+  * Tailles d'équipes (ex: "équipe de 8 personnes", "management de 15 collaborateurs")
+  * Volumes (ex: "1000+ transactions", "50 rapports mensuels")
+- **Exemples de phrases avec chiffres** : 
+  * "Gestion stratégique d'un portefeuille de 75+ clients B2B avec un budget total de 2M€, générant une augmentation de 35% du chiffre d'affaires et une amélioration de 28% de la satisfaction client en 18 mois"
+  * "Formation approfondie en management stratégique et leadership, incluant la gestion d'équipes de 12+ collaborateurs, l'élaboration de stratégies d'entreprise, et l'optimisation des processus opérationnels avec une réduction de 40% des coûts"
 - **Impact** : Montre l'impact concret de chaque action avec des chiffres et des pourcentages
-- **Responsabilités** : Détaille les responsabilités principales et secondaires avec des exemples concrets
-- **Projets** : Mentionne des projets concrets avec leurs résultats, leurs budgets, et leurs impacts
-- **Contexte** : Ajoute toujours le contexte (secteur, taille d'entreprise, équipe, budget, etc.)
+- **Responsabilités** : Détaille les responsabilités principales et secondaires avec des exemples concrets et des métriques
+- **Projets** : Mentionne des projets concrets avec leurs résultats, leurs budgets, et leurs impacts chiffrés
+- **Contexte** : Ajoute toujours le contexte (secteur, taille d'entreprise, équipe, budget, etc.) avec des chiffres
 
 16. **Titres de Section :** Chaque titre de section doit être **écrit en MAJUSCULES**.
 
