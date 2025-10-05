@@ -600,27 +600,40 @@ async def get_all_users():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données")
 
+# Modèle pour l'optimisation de CV
+class CVOptimizationRequest(BaseModel):
+    cv_content: str
+    job_description: Optional[str] = None
+    user_id: Optional[str] = None
+
 # Endpoint pour optimiser un CV
 @app.post("/optimize-cv")
-async def optimize_cv(request: dict):
+async def optimize_cv(request: CVOptimizationRequest):
     try:
+        print(f"📝 Optimisation CV reçue: {len(request.cv_content)} caractères")
+        
         # Simulation d'optimisation de CV
         return {
             "success": True,
             "message": "CV optimisé avec succès",
             "optimized_cv": {
                 "title": "CV Optimisé",
-                "content": "Contenu optimisé du CV...",
+                "content": f"Contenu optimisé du CV basé sur: {request.cv_content[:100]}...",
                 "score": 85,
                 "suggestions": [
                     "Ajoutez plus de mots-clés techniques",
-                    "Améliorez la structure des sections",
-                    "Quantifiez vos réalisations"
-                ]
+                    "Améliorez la structure des sections", 
+                    "Quantifiez vos réalisations",
+                    "Utilisez des verbes d'action"
+                ],
+                "original_length": len(request.cv_content),
+                "optimized_length": len(request.cv_content) + 200
             }
         }
     except Exception as e:
         print(f"❌ Erreur optimisation CV: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de l'optimisation du CV")
 
 if __name__ == "__main__":
