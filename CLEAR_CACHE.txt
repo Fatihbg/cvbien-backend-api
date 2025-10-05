@@ -1,0 +1,4 @@
+CLEAR RAILWAY CACHE - 19:25
+OpenAI client fix without proxies argument
+Version 2.2.0 - CORRECTED
+FORCE CLEAR CACHE AND REDEPLOY

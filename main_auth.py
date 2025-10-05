@@ -899,7 +899,7 @@ async def get_version():
 
 @app.get("/test-openai")
 async def test_openai():
-    """Test endpoint pour vérifier la configuration OpenAI"""
+    """Test endpoint pour vérifier la configuration OpenAI - VERSION CORRIGÉE"""
     try:
         import openai
         api_key = os.getenv("OPENAI_API_KEY")
@@ -907,7 +907,7 @@ async def test_openai():
         if not api_key:
             return {"error": "Clé API OpenAI manquante", "has_key": False}
         
-        # Test simple avec OpenAI (nouvelle API) - Configuration minimale
+        # Test simple avec OpenAI (nouvelle API) - Configuration minimale SANS PROXIES
         client = openai.OpenAI(
             api_key=api_key,
             timeout=30.0
