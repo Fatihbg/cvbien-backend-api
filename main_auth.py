@@ -754,8 +754,11 @@ DESCRIPTION DU POSTE:
 
 Génère maintenant le CV optimisé en respectant TOUTES ces instructions."""
             
-            # Nouvelle API OpenAI 1.0+
-            client = openai.OpenAI(api_key=api_key)
+            # Nouvelle API OpenAI 1.0+ - Configuration minimale
+            client = openai.OpenAI(
+                api_key=api_key,
+                timeout=30.0
+            )
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
@@ -900,8 +903,11 @@ async def test_openai():
         if not api_key:
             return {"error": "Clé API OpenAI manquante", "has_key": False}
         
-        # Test simple avec OpenAI (nouvelle API)
-        client = openai.OpenAI(api_key=api_key)
+        # Test simple avec OpenAI (nouvelle API) - Configuration minimale
+        client = openai.OpenAI(
+            api_key=api_key,
+            timeout=30.0
+        )
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": "Test"}],
