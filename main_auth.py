@@ -645,44 +645,114 @@ async def optimize_cv(
             
             print(f"🤖 Génération CV avec OpenAI...")
             
-            # Prompt pour optimiser le CV
-            prompt = f"""
-            Tu es un expert en recrutement et optimisation de CV. 
-            
-            CV ORIGINAL:
-            {cv_content}
-            
-            DESCRIPTION DU POSTE:
-            {job_offer or "Poste non spécifié"}
-            
-            Tâche: Optimise ce CV pour qu'il corresponde parfaitement au poste demandé.
-            
-            Retourne UNIQUEMENT le CV optimisé au format suivant:
-            
-            [NOM PRÉNOM]
-            [Email] | [Téléphone] | [Ville]
-            
-            PROFESSIONAL SUMMARY
-            [Résumé professionnel adapté au poste]
-            
-            EXPERIENCE PROFESSIONNELLE
-            [Expériences reformulées avec mots-clés du poste]
-            
-            FORMATION
-            [Formations pertinentes]
-            
-            COMPETENCES
-            [Compétences techniques et soft skills adaptées]
-            
-            LANGUES
-            [Langues parlées]
-            
-            IMPORTANT: 
-            - Utilise les mots-clés de la description du poste
-            - Quantifie les réalisations avec des chiffres
-            - Adapte le CV au secteur d'activité
-            - Structure claire et professionnelle
-            """
+            # Prompt sophistiqué "Ronaldo Prime" pour CV de qualité
+            prompt = f"""Tu es un expert en recrutement et en intelligence artificielle pour l'optimisation de CV. Ta mission est d'analyser l'offre d'emploi et d'optimiser le CV pour qu'il corresponde PARFAITEMENT au poste recherché. Tu dois être STRATÉGIQUE et INTELLIGENT dans ton approche.
+
+🚨🚨🚨 RÈGLE DE LANGUE ABSOLUE - PRIORITÉ #1 - OBLIGATOIRE 🚨🚨🚨
+1. LIS la description d'emploi ci-dessous
+2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, etc.)
+3. GÉNÈRE le CV ENTIER dans cette langue détectée
+4. Si l'offre est en ANGLAIS → CV en ANGLAIS avec "PROFESSIONAL SUMMARY", "PROFESSIONAL EXPERIENCE", etc.
+5. Si l'offre est en FRANÇAIS → CV en FRANÇAIS avec "RÉSUMÉ PROFESSIONNEL", "EXPÉRIENCE PROFESSIONNELLE", etc.
+6. Si l'offre est en ESPAGNOL → CV en ESPAGNOL avec "RESUMEN PROFESIONAL", "EXPERIENCIA PROFESIONAL", etc.
+7. JAMAIS de mélange de langues dans le CV
+8. Cette règle est ABSOLUE et doit être respectée à 100%
+
+**STRATÉGIE D'INTELLIGENCE ARTIFICIELLE POUR LE MATCHING CV-JOB :**
+
+1. **ANALYSE INTELLIGENTE DE L'OFFRE (CRITIQUE) :**
+   - **ÉTAPE 1 - DÉTECTION LANGUE** : Analyse la description d'emploi pour identifier sa langue (français, anglais, espagnol, allemand, italien, etc.)
+   - **ÉTAPE 2 - ADAPTATION LANGUE** : Génère TOUT le CV dans cette langue détectée
+   - Identifie les mots-clés techniques, les compétences requises, et les qualifications spécifiques
+   - Détecte le secteur d'activité, le niveau de poste, et les responsabilités clés
+   - Analyse le vocabulaire utilisé et le style de communication attendu
+   - Identifie les soft skills et hard skills prioritaires
+
+2. **TRANSFORMATION STRATÉGIQUE DU CV :**
+   - **Repositionnement intelligent des expériences** : Reformule chaque poste pour montrer comment il est lié au poste recherché
+   - **Connexion des formations** : Montre comment les diplômes/formations sont pertinents pour le poste
+   - **Quantification des résultats** : Transforme les réalisations vagues en résultats mesurables qui correspondent au secteur
+   - **Vocabulaire sectoriel** : Utilise le jargon et les termes techniques du domaine ciblé
+
+3. **MATCHING INTELLIGENT ET RÉALISTE DES COMPÉTENCES :**
+   - **Soft Skills (TOUJOURS ajouter)** : Si l'offre demande "leadership", "communication", "travail d'équipe", etc., ajoute-les intelligemment
+   - **Compétences techniques (REALISTE ET NATUREL)** : 
+     * Si le CV mentionne "programmation" et l'offre demande "Python" → "Intérêt pour le développement Python"
+     * Si l'offre demande "Mercedes Classe G moteur 250 turbo" → "Intérêt pour Mercedes Classe G" (pas trop spécifique)
+     * Si le CV ne mentionne PAS une compétence technique demandée → "Intérêt pour [compétence générale]" ou "Sensibilité à [domaine]"
+     * JAMAIS prétendre être expert dans une technologie non mentionnée dans le CV original
+   - **Compétences transférables** : Montre comment les compétences existantes peuvent s'appliquer au nouveau poste
+
+4. **RESTRUCTURATION STRATÉGIQUE :**
+   - Réorganise les sections par ordre de pertinence pour le poste
+   - Mets en avant les expériences les plus pertinentes
+   - Adapte le résumé professionnel pour qu'il colle parfaitement au profil recherché
+
+5. **CONTENU INTACT MAIS INTELLIGENT :** Tu dois **ABSOLUMENT** inclure **TOUTES** les expériences et formations existantes, mais les reformuler de manière stratégique pour qu'elles correspondent au poste. 
+
+**🔥 CRITIQUE - PRÉSERVER TOUS LES LIENS :** Tu dois **OBLIGATOIREMENT** conserver **TOUS** les liens présents dans le CV original (LinkedIn, Portfolio, Site web, GitHub, etc.) dans le CV optimisé. Ne les supprime JAMAIS et ne les modifie PAS. Ils doivent apparaître exactement comme dans le CV original.
+
+**🚫 INTERDICTION ABSOLUE :** Ne JAMAIS ajouter de liens (LinkedIn, Portfolio, etc.) qui ne sont PAS présents dans le CV original. Si le CV original n'a pas de LinkedIn, n'en ajoute PAS.
+
+**🚫 INTERDICTION ABSOLUE - SECTIONS INUTILES :** Ne JAMAIS ajouter de sections comme "LIENS", "OBJECTIF DE PAGE UNIQUE", ou tout autre texte explicatif à la fin du CV. Le CV doit se terminer directement après la dernière section pertinente.
+
+**🚫 INTERDICTION ABSOLUE - SECTION LIENS :** Ne JAMAIS créer une section "LIENS" séparée. Si des liens existent dans le CV original, ils doivent être intégrés naturellement dans les informations de contact ou dans le contenu des sections, pas dans une section dédiée.
+
+6. **EXEMPLES CONCRETS DE TRANSFORMATION OBLIGATOIRES :**
+   - **Expérience** : "Vendeur dans un magasin" → Dans la description : "Développement de compétences en relation client et négociation commerciale"
+   - **Formation** : "Master en Management" → Dans la description : "Formation en management stratégique et leadership"
+   - **Compétences** : Si l'offre demande "Excel" et le CV ne le mentionne pas → "Intérêt pour les outils d'analyse de données"
+   - **Compétences spécifiques** : Si l'offre demande "Mercedes Classe G moteur 250 turbo" → "Intérêt pour Mercedes Classe G" (général, pas trop spécifique)
+   - **Soft Skills** : Toujours ajouter les soft skills demandés (leadership, communication, etc.) même s'ils ne sont pas explicitement dans le CV
+   - **LIENS (CRITIQUE)** : Si le CV original contient "LinkedIn: linkedin.com/in/johndoe" → Le CV optimisé DOIT contenir exactement "LinkedIn: linkedin.com/in/johndoe"
+
+7. **INSTRUCTIONS CRITIQUES POUR LES COMPÉTENCES :**
+   - **OBLIGATOIRE** : Créer une section TECHNICAL SKILLS avec BEAUCOUP de compétences
+   - **Format par lignes** :
+     * Ligne 1 : "Compétences techniques : [compétences du CV], [intérêt pour compétences demandées], [compétences du secteur]"
+     * Ligne 2 : "Soft skills : [soft skills du CV], [soft skills demandés], [autres soft skills pertinents]"
+     * Ligne 3 : "Outils : [outils du CV], [intérêt pour outils demandés], [outils du secteur]"
+     * Ligne 4 : "Langues : [langues du CV], [langues demandées]"
+     * Ligne 5 : "Certifications : [certifications du CV], [intérêt pour certifications du secteur]"
+   - **Exemple** : "Compétences techniques : Python, JavaScript, Intérêt pour React, Vue.js, Node.js, SQL, Git"
+   - **Exemple** : "Soft skills : Leadership, Communication, Travail d'équipe, Gestion de projet, Résolution de problèmes"
+   - **Exemple** : "Outils : Excel, PowerPoint, Intérêt pour Tableau, Power BI, Jira, Confluence"
+   - **NE PAS** utiliser de puces dans cette section
+   - **AJOUTER** beaucoup de compétences pertinentes pour le secteur
+
+8. **INSTRUCTIONS CRITIQUES POUR LES EXPÉRIENCES :**
+   - **OBLIGATOIRE** : Reformule chaque expérience pour qu'elle soit pertinente au poste recherché
+   - **Format** : "[Titre du poste] - [Entreprise] ([Dates])"
+   - **Description** : Reformule les tâches et compétences pour qu'elles correspondent au poste recherché
+   - **Exemple** : "Vendeur - Magasin ABC (2020-2022)" puis dans la description : "Développement de compétences en relation client et négociation commerciale"
+
+9. **INSTRUCTIONS CRITIQUES POUR LES FORMATIONS :**
+   - **OBLIGATOIRE** : Reformule chaque formation pour qu'elle soit pertinente au poste recherché
+   - **Format** : "[Diplôme] - [Institution] ([Dates])"
+   - **Description** : Reformule les compétences acquises pour qu'elles correspondent au poste recherché
+   - **Exemple** : "Master en Management - ICHEC (2023-2025)" puis dans la description : "Formation en leadership et stratégie d'entreprise"
+
+10. **MOTS-CLÉS ATS (CRITIQUE) :** Utilise la terminologie EXACTE de l'offre d'emploi. Si l'offre dit "Business Analyst", utilise "Business Analyst" et non "Analyste d'affaires".
+
+11. **Nom & Prénom :** Extrait le nom et prénom, en utilisant UNIQUEMENT les balises <NAME> et </NAME>.
+
+12. **Contacts & Liens (CRITIQUE) :** Extrait les coordonnées. Si un lien (LinkedIn, Portfolio, Site web, etc.) existe dans le CV original, tu **DOIS ABSOLUMENT** l'inclure dans le CV final. **NE JAMAIS INVENTER DE LIEN** et **NE JAMAIS SUPPRIMER UN LIEN EXISTANT**. Les liens doivent être intégrés dans les informations de contact, PAS dans une section séparée "LIENS". Utilise UNIQUEMENT les balises <CONTACT> et </CONTACT>.
+
+13. **Titre de Poste :** Génère un titre qui correspond EXACTEMENT au poste recherché, en utilisant UNIQUEMENT les balises <TITLE> et </TITLE>. Le titre doit être CENTRÉ.
+
+14. **Résumé :** Génère UN SEUL résumé de 3-4 lignes qui montre clairement pourquoi le candidat est parfait pour ce poste spécifique, SANS mentionner le nom de l'entreprise ou du poste spécifique. Le résumé doit être CENTRÉ. Utilise UNIQUEMENT les balises <SUMMARY> et </SUMMARY>.
+
+15. **Objectif de Page Unique (CRITIQUE) :** Le CV doit tenir sur **UNE PAGE COMPLÈTE** (pas la moitié de page). Utilise un phrasé concis mais informatif pour remplir la page entière.
+
+16. **Titres de Section :** Chaque titre de section doit être **écrit en MAJUSCULES**.
+
+CV ORIGINAL:
+{cv_content}
+
+DESCRIPTION DU POSTE:
+{job_offer or "Poste non spécifié"}
+
+Génère maintenant le CV optimisé en respectant TOUTES ces instructions."""
             
             response = openai.ChatCompletion.create(
                 model="gpt-4o",
