@@ -893,6 +893,10 @@ async def generate_pdf(cv_text: str = Form(...)):
         print(f"❌ Erreur génération PDF: {e}")
         return {"success": False, "error": str(e)}
 
+@app.get("/version")
+async def get_version():
+    return {"version": "2.0.0", "status": "OpenAI 1.0+ Compatible", "timestamp": "2025-01-05"}
+
 @app.get("/test-openai")
 async def test_openai():
     """Test endpoint pour vérifier la configuration OpenAI"""
