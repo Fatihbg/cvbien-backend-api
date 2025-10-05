@@ -7,6 +7,7 @@ import jwt
 import hashlib
 import sqlite3
 import os
+import re
 from datetime import datetime, timedelta
 import uuid
 # import stripe  # Désactivé pour simulation
@@ -859,75 +860,110 @@ async def generate_pdf(cv_text: str = Form(...)):
         doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
         
-        # Styles personnalisés
-        title_style = ParagraphStyle(
-            'TitleStyle',
-            parent=styles['Heading1'],
-            fontSize=18,
-            leading=22,
-            textColor='#1e40af',
-            alignment=1,  # Centré
-            spaceAfter=12
-        )
-        
+        # Styles professionnels compacts comme l'image
         name_style = ParagraphStyle(
             'NameStyle',
             parent=styles['Heading1'],
-            fontSize=20,
-            leading=24,
-            textColor='#2563eb',
-            alignment=1,  # Centré
-            spaceAfter=8
+            fontSize=16,
+            leading=18,
+            textColor='#000000',
+            alignment=0,  # Aligné à gauche
+            spaceAfter=6
         )
         
         contact_style = ParagraphStyle(
             'ContactStyle',
             parent=styles['Normal'],
-            fontSize=10,
-            leading=12,
-            textColor='#4b5563',
-            alignment=1,  # Centré
-            spaceAfter=12
+            fontSize=9,
+            leading=10,
+            textColor='#000000',
+            alignment=0,  # Aligné à gauche
+            spaceAfter=8
         )
         
         section_style = ParagraphStyle(
             'SectionStyle',
             parent=styles['Heading2'],
-            fontSize=14,
-            leading=18,
-            textColor='#1e40af',
-            spaceBefore=12,
-            spaceAfter=8
+            fontSize=11,
+            leading=12,
+            textColor='#000000',
+            spaceBefore=6,
+            spaceAfter=4,
+            fontName='Helvetica-Bold'
+        )
+        
+        job_title_style = ParagraphStyle(
+            'JobTitleStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            leading=11,
+            textColor='#000000',
+            spaceAfter=2,
+            fontName='Helvetica-Bold'
+        )
+        
+        company_style = ParagraphStyle(
+            'CompanyStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            leading=11,
+            textColor='#000000',
+            spaceAfter=2
+        )
+        
+        date_style = ParagraphStyle(
+            'DateStyle',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=10,
+            textColor='#000000',
+            alignment=2,  # Aligné à droite
+            spaceAfter=2
+        )
+        
+        bullet_style = ParagraphStyle(
+            'BulletStyle',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=10,
+            textColor='#000000',
+            leftIndent=12,
+            spaceAfter=1
         )
         
         normal_style = ParagraphStyle(
             'NormalStyle',
             parent=styles['Normal'],
-            fontSize=10,
-            leading=12,
-            textColor='#374151',
-            spaceAfter=4
+            fontSize=9,
+            leading=10,
+            textColor='#000000',
+            spaceAfter=2
         )
         
-        # Parser le CV pour un formatage intelligent
+        # Parser intelligent pour formatage professionnel compact
         lines = cv_text.split('\n')
         story = []
         
         i = 0
+        current_section = ''
+        
         while i < len(lines):
             line = lines[i].strip()
             if not line:
                 i += 1
                 continue
                 
-            # Détecter le nom (ligne en majuscules, pas trop longue)
-            if line.isupper() and len(line) < 50 and len(line) > 3 and not line.startswith('PROFESSIONAL'):
+            # Détecter le nom (ligne en majuscules, pas trop longue, pas une section)
+            if (line.isupper() and len(line) < 50 and len(line) > 3 and 
+                not line.startswith('PROFESSIONAL') and not line.startswith('EXPERIENCE') and 
+                not line.startswith('EDUCATION') and not line.startswith('SKILLS')):
                 story.append(Paragraph(line, name_style))
                 i += 1
                 continue
                 
-            # Détecter les contacts (contient @ ou |)
-            if '@' in line or '|' in line:
+            # Détecter les contacts (contient @ ou | ou téléphone)
+            if ('@' in line or '|' in line or 
+                any(char.isdigit() for char in line) and len(line) > 5):
                 story.append(Paragraph(line, contact_style))
                 i += 1
                 continue
@@ -935,18 +971,47 @@ async def generate_pdf(cv_text: str = Form(...)):
             # Détecter les titres de section
             if (line in ['PROFESSIONAL SUMMARY', 'PROFESSIONAL EXPERIENCE', 'EDUCATION', 'TECHNICAL SKILLS', 
                         'CERTIFICATIONS & ACHIEVEMENTS', 'EXPÉRIENCE PROFESSIONNELLE', 'FORMATION', 
-                        'COMPÉTENCES', 'COMPETENCES', 'RÉSUMÉ PROFESSIONNEL'] or 
+                        'COMPÉTENCES', 'COMPETENCES', 'RÉSUMÉ PROFESSIONNEL', 'PROJECTS', 'OTHER'] or 
                 line.endswith('EXPERIENCE') or line.endswith('FORMATION') or line.endswith('SKILLS')):
                 story.append(Paragraph(line, section_style))
+                current_section = line
+                i += 1
+                continue
+                
+            # Détecter les postes/titres (ligne suivie d'une entreprise)
+            if (current_section and ('EXPERIENCE' in current_section or 'PROJECTS' in current_section) and
+                i + 1 < len(lines) and not lines[i + 1].strip().startswith('•') and 
+                not lines[i + 1].strip().startswith('-') and lines[i + 1].strip() and
+                len(line) > 5 and len(line) < 80):
+                # Poste avec entreprise sur la même ligne ou ligne suivante
+                if ' - ' in line:
+                    parts = line.split(' - ', 1)
+                    story.append(Paragraph(parts[0], job_title_style))
+                    if len(parts) > 1:
+                        story.append(Paragraph(parts[1], company_style))
+                else:
+                    story.append(Paragraph(line, job_title_style))
+                i += 1
+                continue
+                
+            # Détecter les dates (format avec mois/année ou années)
+            if (re.match(r'^[A-Za-z]{3}\s+\d{4}', line) or 
+                re.match(r'^\d{4}', line) or 
+                re.match(r'^[A-Za-z]{3}\s+\d{4}\s*–', line)):
+                story.append(Paragraph(line, date_style))
+                i += 1
+                continue
+                
+            # Détecter les puces
+            if line.startswith('•') or line.startswith('-'):
+                # Nettoyer la puce et formater
+                clean_line = line[1:].strip()
+                story.append(Paragraph(f"• {clean_line}", bullet_style))
                 i += 1
                 continue
                 
             # Texte normal
-            if line.startswith('•') or line.startswith('-'):
-                # Formatage pour les puces
-                story.append(Paragraph(f"&nbsp;&nbsp;&nbsp;{line}", normal_style))
-            else:
-                story.append(Paragraph(line, normal_style))
+            story.append(Paragraph(line, normal_style))
             i += 1
         
         # Construire le PDF
