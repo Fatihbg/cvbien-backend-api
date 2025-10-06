@@ -182,7 +182,6 @@ def test_openai():
     """Tester la connexion OpenAI"""
     debug_info = {
         "openai_available": OPENAI_AVAILABLE,
-        "client_exists": client is not None,
         "api_key_exists": bool(os.getenv("OPENAI_API_KEY")),
         "api_key_length": len(os.getenv("OPENAI_API_KEY", ""))
     }
@@ -190,21 +189,19 @@ def test_openai():
     if not OPENAI_AVAILABLE:
         return {"success": False, "message": "OpenAI SDK non installé", "debug": debug_info}
     
-    if not client:
-        return {"success": False, "message": "Client OpenAI non initialisé", "debug": debug_info}
-    
     try:
         # Test simple avec OpenAI (nouvelle API)
         api_key = os.getenv("OPENAI_API_KEY")
-        if api_key:
-            client = openai.OpenAI(api_key=api_key)
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": "Test"}],
-                max_tokens=10
-            )
-        else:
+        if not api_key:
             return {"success": False, "message": "OPENAI_API_KEY manquante", "debug": debug_info}
+        
+        client = openai.OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": "Test"}],
+            max_tokens=10
+        )
+        
         return {
             "success": True, 
             "message": "OpenAI fonctionne",
