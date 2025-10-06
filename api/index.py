@@ -6,6 +6,7 @@ import os
 import json
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel
 
 # Firebase imports
 try:
@@ -25,7 +26,28 @@ except ImportError:
     STRIPE_AVAILABLE = False
     print("⚠️ Stripe non installé")
 
-app = FastAPI(title="CV Bien API", version="6.1.0")
+# OpenAI import
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+    print("✅ OpenAI importé avec succès")
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("⚠️ OpenAI non installé")
+
+# Modèles de données
+class CVGenerationRequest(BaseModel):
+    cv_content: str
+    job_description: str
+    user_id: str
+
+class CVGenerationResponse(BaseModel):
+    optimized_cv: str
+    ats_score: int
+    success: bool
+    message: str
+
+app = FastAPI(title="CV Bien API", version="6.4.0")
 
 # Configuration CORS
 app.add_middleware(
@@ -83,6 +105,17 @@ if FIREBASE_AVAILABLE:
         print("🔄 Mode sans Firebase...")
         db = None
 
+# Configuration OpenAI
+if OPENAI_AVAILABLE:
+    try:
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        if openai.api_key:
+            print("✅ OpenAI configuré avec succès")
+        else:
+            print("❌ OPENAI_API_KEY manquante")
+    except Exception as e:
+        print(f"❌ Erreur configuration OpenAI: {e}")
+
 # Security
 security = HTTPBearer()
 
@@ -109,11 +142,37 @@ def read_root():
 @app.get("/version")
 def version():
     return {
-        "version": "6.3.0",
-        "status": "Firebase Active with Stripe" if db else "Firebase Inactive",
-        "timestamp": "2025-01-06-02:30",
-        "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing"
+        "version": "6.4.0",
+        "status": "Firebase Active with Stripe & OpenAI" if db and OPENAI_AVAILABLE else "Firebase Inactive",
+        "timestamp": "2025-01-06-03:00",
+        "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing",
+        "openai_available": OPENAI_AVAILABLE,
+        "openai_key": "configured" if os.getenv("OPENAI_API_KEY") else "missing"
     }
+
+@app.get("/test-openai")
+def test_openai():
+    """Tester la connexion OpenAI"""
+    if not OPENAI_AVAILABLE:
+        return {"success": False, "message": "OpenAI SDK non installé"}
+    
+    if not os.getenv("OPENAI_API_KEY"):
+        return {"success": False, "message": "OPENAI_API_KEY manquante"}
+    
+    try:
+        # Test simple avec OpenAI
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "Test"}],
+            max_tokens=10
+        )
+        return {
+            "success": True, 
+            "message": "OpenAI fonctionne",
+            "model": "gpt-3.5-turbo"
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Erreur OpenAI: {str(e)}"}
 
 @app.get("/health")
 def health():
@@ -600,6 +659,71 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         print(f"❌ Erreur webhook: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur webhook: {str(e)}")
+
+@app.post("/optimize-cv", response_model=CVGenerationResponse)
+async def optimize_cv(request: CVGenerationRequest):
+    """Optimiser un CV avec OpenAI"""
+    if not OPENAI_AVAILABLE:
+        raise HTTPException(status_code=503, detail="OpenAI non disponible")
+    
+    try:
+        print("🤖 Génération CV avec OpenAI...")
+        
+        # Appel à OpenAI
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Tu es un expert en recrutement et optimisation de CV. Tu dois optimiser le CV fourni pour qu'il corresponde parfaitement à la description de poste. Améliore le contenu, ajoute des mots-clés pertinents, et structure le CV de manière professionnelle. Retourne uniquement le CV optimisé en texte brut, sans explications."
+                },
+                {
+                    "role": "user",
+                    "content": f"Voici le CV à optimiser:\n\n{request.cv_content}\n\nEt voici la description de poste:\n\n{request.job_description}\n\nOptimise ce CV pour ce poste."
+                }
+            ],
+            max_tokens=3000,
+            temperature=0.7
+        )
+        
+        content = response.choices[0].message.content
+        
+        # Calculer un score ATS simulé (basé sur la longueur et les mots-clés)
+        ats_score = min(95, max(60, len(content) // 50 + 30))
+        
+        # Sauvegarder dans Firestore si disponible
+        if db:
+            try:
+                cv_data = {
+                    "user_id": request.user_id,
+                    "original_content": request.cv_content,
+                    "optimized_content": content,
+                    "job_description": request.job_description,
+                    "ats_score": ats_score,
+                    "created_at": datetime.now(),
+                    "is_downloaded": False
+                }
+                
+                db.collection('generated_cvs').add(cv_data)
+                print(f"✅ CV sauvegardé dans Firestore pour l'utilisateur {request.user_id}")
+            except Exception as e:
+                print(f"⚠️ Erreur sauvegarde Firestore: {e}")
+        
+        return CVGenerationResponse(
+            optimized_cv=content,
+            ats_score=ats_score,
+            success=True,
+            message="CV optimisé avec succès"
+        )
+        
+    except Exception as e:
+        print(f"❌ Erreur OpenAI: {e}")
+        return CVGenerationResponse(
+            optimized_cv=request.cv_content,  # Retourner le CV original en cas d'erreur
+            ats_score=50,
+            success=False,
+            message=f"Erreur lors de l'optimisation: {str(e)}"
+        )
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
