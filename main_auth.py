@@ -9,7 +9,7 @@ import sqlite3
 import os
 from datetime import datetime, timedelta
 import uuid
-# import stripe  # Désactivé pour simulation
+import stripe
 
 # Configuration
 SECRET_KEY = "your-secret-key-change-in-production"
@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement depuis .env
 load_dotenv()
 
-# stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_votre_cle_secrete_ici")  # Désactivé pour simulation
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_votre_cle_secrete_ici")
 
 # Modèles Pydantic
 class UserCreate(BaseModel):
@@ -511,18 +511,43 @@ async def create_payment_intent(
         if not isinstance(payment_data.amount, (int, float)) or payment_data.amount <= 0:
             raise ValueError(f"Amount invalide: {payment_data.amount}")
         
-        # Simuler la création d'une intention de paiement
-        client_secret = f"pi_test_{uuid.uuid4().hex[:24]}"
-        
-        # Simuler une URL de checkout (pour les tests)
-        checkout_url = f"https://checkout.stripe.com/test/{client_secret}"
-        
-        response = PaymentIntentResponse(
-            client_secret=client_secret,
-            amount=payment_data.amount,
-            credits=payment_data.credits,
-            checkout_url=checkout_url
-        )
+        # Créer une vraie session de paiement Stripe
+        try:
+            # Créer une session de checkout Stripe
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'eur',
+                        'product_data': {
+                            'name': f'{payment_data.credits} crédits CVbien',
+                        },
+                        'unit_amount': payment_data.amount * 100,  # Montant en centimes
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={payment_data.credits}&user_id={user_id}',
+                cancel_url='https://cvbien4.vercel.app/payment-cancel',
+                metadata={
+                    'user_id': user_id,
+                    'credits': str(payment_data.credits),
+                    'amount': str(payment_data.amount)
+                }
+            )
+            
+            print(f"✅ DEBUG: Session Stripe créée: {checkout_session.id}")
+            
+            response = PaymentIntentResponse(
+                client_secret=checkout_session.payment_intent,
+                amount=payment_data.amount,
+                credits=payment_data.credits,
+                checkout_url=checkout_session.url
+            )
+            
+        except stripe.error.StripeError as e:
+            print(f"❌ Erreur Stripe: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Erreur de paiement: {str(e)}")
         
         print(f"✅ DEBUG: Réponse générée: {response}")
         return response
@@ -534,14 +559,63 @@ async def create_payment_intent(
         print(f"❌ Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
 
+@app.post("/api/payments/confirm")
+async def confirm_payment(session_id: str):
+    """Confirmer un paiement Stripe et ajouter les crédits"""
+    try:
+        # Récupérer la session Stripe
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        if session.payment_status != 'paid':
+            raise HTTPException(status_code=400, detail="Paiement non confirmé")
+        
+        # Récupérer les métadonnées
+        user_id = session.metadata.get('user_id')
+        credits = int(session.metadata.get('credits', 0))
+        amount = float(session.metadata.get('amount', 0))
+        
+        if not user_id or not credits:
+            raise HTTPException(status_code=400, detail="Métadonnées de session invalides")
+        
+        # Ajouter les crédits à l'utilisateur
+        conn = sqlite3.connect('cvbien.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("UPDATE users SET credits = credits + ? WHERE id = ?", (credits, user_id))
+        
+        # Enregistrer la transaction
+        transaction_id = str(uuid.uuid4())
+        cursor.execute('''
+            INSERT INTO credit_transactions (id, user_id, amount, transaction_type, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (transaction_id, user_id, credits, 'purchase', datetime.utcnow().isoformat()))
+        
+        conn.commit()
+        conn.close()
+        
+        print(f"✅ DEBUG: Paiement confirmé - {credits} crédits ajoutés à l'utilisateur {user_id}")
+        
+        return {
+            "success": True,
+            "credits": credits,
+            "transaction_id": transaction_id
+        }
+        
+    except stripe.error.StripeError as e:
+        print(f"❌ Erreur Stripe: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur de confirmation: {str(e)}")
+    except Exception as e:
+        print(f"❌ Erreur confirmation: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
+
 @app.get("/version")
 async def get_version():
     return {
-        "version": "2.6.0",
-        "status": "Payment Fix Deployed",
-        "timestamp": "2025-01-05 23:25",
-        "fix": "Fixed payment 400 error - verify_token and amount format",
-        "action": "PAYMENT_FIX_DEPLOY"
+        "version": "2.7.0",
+        "status": "Real Stripe Payment Implemented",
+        "timestamp": "2025-01-05 23:30",
+        "fix": "Implemented real Stripe payment system with checkout sessions",
+        "action": "STRIPE_PAYMENT_DEPLOY"
     }
 
 @app.get("/api/admin/users")
