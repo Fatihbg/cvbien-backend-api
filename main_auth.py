@@ -923,6 +923,48 @@ async def get_version():
         "action": "PAYMENT_TEST_DEPLOY"
     }
 
+@app.post("/api/admin/add-credits")
+async def add_credits_to_user(email: str, credits: int):
+    """Ajouter des crédits à un utilisateur par email"""
+    try:
+        conn = sqlite3.connect('cvbien.db')
+        cursor = conn.cursor()
+        
+        # Trouver l'utilisateur par email
+        cursor.execute("SELECT id, credits FROM users WHERE email = ?", (email,))
+        result = cursor.fetchone()
+        
+        if not result:
+            conn.close()
+            return {"status": "error", "message": f"Utilisateur {email} non trouvé"}
+        
+        user_id, current_credits = result
+        new_credits = current_credits + credits
+        
+        # Mettre à jour les crédits
+        cursor.execute("UPDATE users SET credits = ? WHERE id = ?", (new_credits, user_id))
+        
+        # Enregistrer la transaction
+        transaction_id = str(uuid.uuid4())
+        cursor.execute('''
+            INSERT INTO credit_transactions (id, user_id, amount, transaction_type, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (transaction_id, user_id, credits, 'manual_addition', datetime.utcnow().isoformat()))
+        
+        conn.commit()
+        conn.close()
+        
+        return {
+            "status": "success",
+            "message": f"{credits} crédits ajoutés à {email}",
+            "user_id": user_id,
+            "previous_credits": current_credits,
+            "new_credits": new_credits
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur: {str(e)}"}
+
 @app.get("/api/admin/users")
 async def get_all_users():
     """Récupérer tous les utilisateurs pour l'administration."""
