@@ -578,6 +578,10 @@ async def get_version():
 async def root():
     return {"message": "CVbien API - PostgreSQL Version", "version": "3.0.0"}
 
+@app.get("/test")
+async def test():
+    return {"status": "ok", "message": "PostgreSQL backend is working", "timestamp": datetime.utcnow().isoformat()}
+
 # Endpoint de migration des données SQLite vers PostgreSQL
 @app.post("/api/migrate-sqlite-to-postgres")
 async def migrate_sqlite_to_postgres():
