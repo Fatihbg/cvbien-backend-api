@@ -425,20 +425,29 @@ async def confirm_payment(request: dict):
         user_id = request.get("user_id")
         credits = request.get("credits", 0)
         
+        print(f"🔧 DEBUG confirm-payment: user_id={user_id}, credits={credits}")
+        
         if not user_id:
             raise HTTPException(status_code=400, detail="user_id manquant")
         
         # Récupérer l'utilisateur
         user_doc = db.collection('users').document(user_id).get()
+        print(f"🔧 DEBUG: user_doc.exists={user_doc.exists}")
+        
         if not user_doc.exists:
+            print(f"❌ Utilisateur {user_id} non trouvé dans Firestore")
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
         
         user_data = user_doc.to_dict()
         current_credits = user_data.get("credits", 0)
         new_credits = current_credits + credits
         
+        print(f"🔧 DEBUG: current_credits={current_credits}, new_credits={new_credits}")
+        
         # Mettre à jour les crédits
         db.collection('users').document(user_id).update({"credits": new_credits})
+        
+        print(f"✅ Crédits mis à jour: {credits} ajoutés, total: {new_credits}")
         
         return {
             "success": True,
