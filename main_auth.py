@@ -683,34 +683,40 @@ async def test_payment():
         print(f"🔧 DEBUG: Stripe module: {stripe}")
         print(f"🔧 DEBUG: Stripe checkout: {getattr(stripe, 'checkout', 'NOT_FOUND')}")
         
-        # Utiliser l'API Stripe directement
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {
-                        'name': f'{test_data["credits"]} crédits CVbien',
-                    },
-                    'unit_amount': test_data["amount"] * 100,  # Montant en centimes
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url='https://cvbien4.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url='https://cvbien4.vercel.app/payment-cancel',
-            metadata={
-                'user_id': test_data["user_id"],
-                'credits': str(test_data["credits"]),
-                'amount': str(test_data["amount"])
-            }
-        )
+        # Utiliser l'API REST de Stripe directement
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {stripe.api_key}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        
+        data = {
+            'payment_method_types[]': 'card',
+            'line_items[0][price_data][currency]': 'eur',
+            'line_items[0][price_data][product_data][name]': f'{test_data["credits"]} crédits CVbien',
+            'line_items[0][price_data][unit_amount]': test_data["amount"] * 100,
+            'line_items[0][quantity]': 1,
+            'mode': 'payment',
+            'success_url': 'https://cvbien4.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url': 'https://cvbien4.vercel.app/payment-cancel',
+            'metadata[user_id]': test_data["user_id"],
+            'metadata[credits]': str(test_data["credits"]),
+            'metadata[amount]': str(test_data["amount"])
+        }
+        
+        response = requests.post('https://api.stripe.com/v1/checkout/sessions', headers=headers, data=data)
+        
+        if response.status_code != 200:
+            raise Exception(f"Stripe API error: {response.status_code} - {response.text}")
+        
+        checkout_session_data = response.json()
         
         return {
             "status": "success",
             "message": "Session de paiement créée avec succès",
-            "session_id": checkout_session.id,
-            "checkout_url": checkout_session.url
+            "session_id": checkout_session_data["id"],
+            "checkout_url": checkout_session_data["url"]
         }
         
     except Exception as e:
