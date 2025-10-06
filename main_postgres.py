@@ -578,6 +578,97 @@ async def get_version():
 async def root():
     return {"message": "CVbien API - PostgreSQL Version", "version": "3.0.0"}
 
+# Endpoint de migration des données SQLite vers PostgreSQL
+@app.post("/api/migrate-sqlite-to-postgres")
+async def migrate_sqlite_to_postgres():
+    """Migrer les données de SQLite vers PostgreSQL"""
+    try:
+        import sqlite3
+        
+        # Connexion à SQLite (si le fichier existe)
+        try:
+            sqlite_conn = sqlite3.connect('cvbien.db')
+            sqlite_cursor = sqlite_conn.cursor()
+            
+            # Récupérer les utilisateurs de SQLite
+            sqlite_cursor.execute("SELECT * FROM users")
+            sqlite_users = sqlite_cursor.fetchall()
+            
+            # Récupérer les transactions de SQLite
+            sqlite_cursor.execute("SELECT * FROM transactions")
+            sqlite_transactions = sqlite_cursor.fetchall()
+            
+            sqlite_conn.close()
+            
+            print(f"📊 Données SQLite trouvées: {len(sqlite_users)} utilisateurs, {len(sqlite_transactions)} transactions")
+            
+        except Exception as e:
+            print(f"⚠️ Pas de base SQLite trouvée: {e}")
+            return {"status": "error", "message": "Aucune base SQLite trouvée"}
+        
+        # Connexion à PostgreSQL
+        db = SessionLocal()
+        
+        # Migrer les utilisateurs
+        migrated_users = 0
+        for user in sqlite_users:
+            try:
+                # Vérifier si l'utilisateur existe déjà
+                existing_user = db.query(User).filter(User.email == user[1]).first()
+                if not existing_user:
+                    new_user = User(
+                        id=user[0],
+                        email=user[1],
+                        name=user[2],
+                        password_hash=user[3],
+                        credits=user[4],
+                        created_at=datetime.fromisoformat(user[5]) if user[5] else datetime.utcnow(),
+                        last_login=datetime.fromisoformat(user[6]) if user[6] else None,
+                        subscription_type=user[7] if len(user) > 7 else 'free',
+                        is_active=bool(user[8]) if len(user) > 8 else True
+                    )
+                    db.add(new_user)
+                    migrated_users += 1
+            except Exception as e:
+                print(f"❌ Erreur migration utilisateur {user[1]}: {e}")
+        
+        # Migrer les transactions
+        migrated_transactions = 0
+        for trans in sqlite_transactions:
+            try:
+                # Vérifier si la transaction existe déjà
+                existing_trans = db.query(Transaction).filter(
+                    Transaction.user_id == trans[1],
+                    Transaction.created_at == datetime.fromisoformat(trans[4]) if trans[4] else datetime.utcnow()
+                ).first()
+                if not existing_trans:
+                    new_transaction = Transaction(
+                        id=trans[0],
+                        user_id=trans[1],
+                        amount=trans[2],
+                        credits_added=trans[3],
+                        created_at=datetime.fromisoformat(trans[4]) if trans[4] else datetime.utcnow(),
+                        type=trans[5] if len(trans) > 5 else 'consumption'
+                    )
+                    db.add(new_transaction)
+                    migrated_transactions += 1
+            except Exception as e:
+                print(f"❌ Erreur migration transaction {trans[0]}: {e}")
+        
+        # Sauvegarder les changements
+        db.commit()
+        db.close()
+        
+        return {
+            "status": "success",
+            "message": f"Migration réussie ! {migrated_users} utilisateurs et {migrated_transactions} transactions migrés",
+            "migrated_users": migrated_users,
+            "migrated_transactions": migrated_transactions
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur migration: {str(e)}"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
