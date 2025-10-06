@@ -13,18 +13,18 @@ def main():
     print(f"Working directory: {os.getcwd()}")
     print(f"Files in directory: {os.listdir('.')}")
     
-    # Vérifier que main_firebase.py existe
-    if not os.path.exists('main_firebase.py'):
-        print("❌ ERROR: main_firebase.py not found!")
+    # Vérifier que main_auth.py existe
+    if not os.path.exists('main_auth.py'):
+        print("❌ ERROR: main_auth.py not found!")
         sys.exit(1)
     
-    print("✅ main_firebase.py found, starting...")
+    print("✅ main_auth.py found, starting...")
     
-    # Lancer main_firebase.py
+    # Lancer main_auth.py
     try:
-        subprocess.run([sys.executable, 'main_firebase.py'], check=True)
+        subprocess.run([sys.executable, 'main_auth.py'], check=True)
     except subprocess.CalledProcessError as e:
-        print(f"❌ Error running main_firebase.py: {e}")
+        print(f"❌ Error running main_auth.py: {e}")
         sys.exit(1)
     except KeyboardInterrupt:
         print("🛑 Shutting down...")
