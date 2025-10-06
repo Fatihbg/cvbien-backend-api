@@ -109,9 +109,10 @@ def read_root():
 @app.get("/version")
 def version():
     return {
-        "version": "6.2.0",
+        "version": "6.3.0",
         "status": "Firebase Active with Stripe" if db else "Firebase Inactive",
-        "timestamp": "2025-01-06-02:00"
+        "timestamp": "2025-01-06-02:30",
+        "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing"
     }
 
 @app.get("/health")
@@ -344,7 +345,7 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
             'line_items[0][price_data][unit_amount]': str(amount * 100),
             'line_items[0][quantity]': '1',
             'mode': 'payment',
-            'success_url': f'https://cvbien4.vercel.app/?payment=success&credits={credits}&user_id={current_user["uid"]}',
+            'success_url': f'https://cvbien4.vercel.app/?payment=success&credits={credits}&user_id={current_user["uid"]}&session_id={{CHECKOUT_SESSION_ID}}',
             'cancel_url': 'https://cvbien4.vercel.app/?payment=cancel',
             'metadata[user_id]': current_user['uid'],
             'metadata[credits]': str(credits)
