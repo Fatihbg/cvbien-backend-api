@@ -176,11 +176,18 @@ def version():
 @app.get("/test-openai")
 def test_openai():
     """Tester la connexion OpenAI"""
+    debug_info = {
+        "openai_available": OPENAI_AVAILABLE,
+        "client_exists": client is not None,
+        "api_key_exists": bool(os.getenv("OPENAI_API_KEY")),
+        "api_key_length": len(os.getenv("OPENAI_API_KEY", ""))
+    }
+    
     if not OPENAI_AVAILABLE:
-        return {"success": False, "message": "OpenAI SDK non installé"}
+        return {"success": False, "message": "OpenAI SDK non installé", "debug": debug_info}
     
     if not client:
-        return {"success": False, "message": "Client OpenAI non initialisé"}
+        return {"success": False, "message": "Client OpenAI non initialisé", "debug": debug_info}
     
     try:
         # Test simple avec OpenAI
@@ -192,10 +199,11 @@ def test_openai():
         return {
             "success": True, 
             "message": "OpenAI fonctionne",
-            "model": "gpt-3.5-turbo"
+            "model": "gpt-3.5-turbo",
+            "debug": debug_info
         }
     except Exception as e:
-        return {"success": False, "message": f"Erreur OpenAI: {str(e)}"}
+        return {"success": False, "message": f"Erreur OpenAI: {str(e)}", "debug": debug_info}
 
 @app.get("/health")
 def health():
