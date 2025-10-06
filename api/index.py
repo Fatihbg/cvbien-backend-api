@@ -100,9 +100,9 @@ def read_root():
 @app.get("/version")
 def version():
     return {
-        "version": "6.1.0",
-        "status": "Firebase Active" if db else "Firebase Inactive",
-        "timestamp": "2025-01-06-01:30"
+        "version": "6.2.0",
+        "status": "Firebase Active with Stripe" if db else "Firebase Inactive",
+        "timestamp": "2025-01-06-02:00"
     }
 
 @app.get("/health")
