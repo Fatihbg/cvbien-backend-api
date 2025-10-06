@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import uuid
 import stripe
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
 import openai
 import requests
 from reportlab.lib.pagesizes import letter, A4
@@ -128,70 +128,69 @@ app.add_middleware(
 # Endpoints
 @app.get("/")
 async def root():
-    return {"message": "CVbien API - Firebase Version", "version": "4.1.0", "database": "Firebase Firestore", "status": "ACTIVE"}
+    return {"message": "CVbien API - Firebase Version", "version": "4.2.0", "database": "Firebase Firestore", "status": "ACTIVE"}
 
 @app.get("/version")
 async def get_version():
     return {
-        "version": "4.1.0",
-        "status": "Firebase Migration Complete",
-        "timestamp": "2025-01-05-23:58",
-        "fix": "Migrated to Firebase for reliable data persistence",
-        "action": "FIREBASE_MIGRATION"
+        "version": "4.2.0",
+        "status": "Firebase Auth Integration",
+        "timestamp": "2025-01-06-00:15",
+        "fix": "Added Firebase Authentication support",
+        "action": "FIREBASE_AUTH_INTEGRATION"
     }
 
 @app.post("/api/auth/register", response_model=dict)
 async def register(user: UserCreate):
-    """Inscription d'un nouvel utilisateur"""
+    """Inscription d'un nouvel utilisateur avec Firebase Auth"""
     try:
-        # Vérifier si l'utilisateur existe déjà
-        users_ref = db.collection('users')
-        query = users_ref.where('email', '==', user.email).limit(1)
-        existing_users = query.get()
+        # Créer l'utilisateur dans Firebase Authentication
+        firebase_user = auth.create_user(
+            email=user.email,
+            password=user.password,
+            display_name=user.name
+        )
         
-        if existing_users:
-            raise HTTPException(status_code=400, detail="Email déjà utilisé")
-        
-        # Créer l'utilisateur
-        user_id = str(uuid.uuid4())
-        password_hash = hash_password(user.password)
-        created_at = datetime.utcnow().isoformat()
-        
+        # Créer le profil utilisateur dans Firestore
         user_data = {
-            'id': user_id,
+            'id': firebase_user.uid,
             'email': user.email,
             'name': user.name,
-            'password_hash': password_hash,
             'credits': 2,
-            'created_at': created_at,
+            'created_at': datetime.utcnow().isoformat(),
             'last_login': None,
             'subscription_type': 'free',
             'is_active': True
         }
         
-        # Sauvegarder dans Firebase
-        users_ref.document(user_id).set(user_data)
+        # Sauvegarder dans Firestore
+        db.collection('users').document(firebase_user.uid).set(user_data)
         
-        # Créer le token
-        access_token = create_access_token(data={"sub": user_id})
+        # Créer un token JWT custom pour notre API
+        access_token = create_access_token(data={"sub": firebase_user.uid})
         
         return {
             "status": "success",
             "message": "Utilisateur créé avec succès",
             "user": UserResponse(**user_data),
-            "access_token": access_token
+            "access_token": access_token,
+            "firebase_uid": firebase_user.uid
         }
         
-    except HTTPException:
-        raise
+    except auth.EmailAlreadyExistsError:
+        raise HTTPException(status_code=400, detail="Email déjà utilisé")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la création: {str(e)}")
 
 @app.post("/api/auth/login", response_model=dict)
 async def login(user: UserLogin):
-    """Connexion d'un utilisateur"""
+    """Connexion d'un utilisateur avec Firebase Auth"""
     try:
-        # Trouver l'utilisateur par email
+        # Note: Pour une vraie implémentation Firebase Auth, 
+        # le frontend devrait utiliser Firebase SDK pour l'authentification
+        # et envoyer le token Firebase au backend pour validation
+        
+        # Pour l'instant, on garde l'approche custom mais avec Firestore
         users_ref = db.collection('users')
         query = users_ref.where('email', '==', user.email).limit(1)
         users = query.get()
@@ -202,8 +201,8 @@ async def login(user: UserLogin):
         user_doc = users[0]
         user_data = user_doc.to_dict()
         
-        # Vérifier le mot de passe
-        if user_data['password_hash'] != hash_password(user.password):
+        # Vérifier le mot de passe (temporaire - à remplacer par Firebase Auth)
+        if user_data.get('password_hash') != hash_password(user.password):
             raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
         
         # Mettre à jour la dernière connexion
@@ -241,6 +240,29 @@ async def validate_token(user_id: str = Depends(verify_token)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur de validation: {str(e)}")
+
+@app.post("/api/auth/validate-firebase")
+async def validate_firebase_token(firebase_token: str):
+    """Valider un token Firebase"""
+    try:
+        # Vérifier le token Firebase
+        decoded_token = auth.verify_id_token(firebase_token)
+        uid = decoded_token['uid']
+        
+        # Récupérer les données utilisateur depuis Firestore
+        user_doc = db.collection('users').document(uid).get()
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        user_data = user_doc.to_dict()
+        
+        return {
+            "valid": True,
+            "user_id": uid,
+            "user": UserResponse(**user_data)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Token Firebase invalide: {str(e)}")
 
 @app.get("/api/user/profile", response_model=UserResponse)
 async def get_profile(user_id: str = Depends(verify_token)):
