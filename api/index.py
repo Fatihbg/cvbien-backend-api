@@ -130,14 +130,25 @@ if OPENAI_AVAILABLE:
     try:
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key:
+            print(f"🔧 Tentative d'initialisation OpenAI avec clé de {len(api_key)} caractères")
             # Configuration OpenAI moderne (v1.0+)
             client = openai.OpenAI(api_key=api_key)
             print("✅ OpenAI configuré avec succès")
+            # Test rapide pour vérifier
+            test_response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": "Hello"}],
+                max_tokens=5
+            )
+            print("✅ Test OpenAI réussi")
         else:
             print("❌ OPENAI_API_KEY manquante")
     except Exception as e:
         print(f"❌ Erreur configuration OpenAI: {e}")
+        print(f"❌ Type d'erreur: {type(e)}")
         client = None
+else:
+    print("❌ OpenAI SDK non disponible")
 
 # Security
 security = HTTPBearer()
