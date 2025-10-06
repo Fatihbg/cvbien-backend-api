@@ -122,7 +122,7 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
             password_hash TEXT NOT NULL,
-            credits INTEGER DEFAULT 1,
+            credits INTEGER DEFAULT 2,
             created_at TEXT NOT NULL,
             last_login_at TEXT,
             subscription_type TEXT DEFAULT 'free',
