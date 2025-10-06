@@ -1,1 +1,1 @@
-web: python main_firebase.py
+web: python main_simple.py
