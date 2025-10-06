@@ -138,6 +138,53 @@ def test_stripe():
     except Exception as e:
         return {"status": "error", "message": f"Erreur Stripe: {str(e)}"}
 
+@app.post("/api/test-payment-session")
+async def test_payment_session():
+    """Test de création d'une session Stripe"""
+    stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+    if not stripe_secret_key:
+        raise HTTPException(status_code=500, detail="STRIPE_SECRET_KEY manquante")
+    
+    try:
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {stripe_secret_key}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        
+        data = {
+            'payment_method_types[]': 'card',
+            'line_items[0][price_data][currency]': 'eur',
+            'line_items[0][price_data][product_data][name]': 'Test 5 crédits',
+            'line_items[0][price_data][unit_amount]': '100',  # 1€
+            'line_items[0][quantity]': '1',
+            'mode': 'payment',
+            'success_url': 'https://cvbien4.vercel.app/?payment=success',
+            'cancel_url': 'https://cvbien4.vercel.app/?payment=cancel',
+        }
+        
+        response = requests.post('https://api.stripe.com/v1/checkout/sessions', headers=headers, data=data)
+        
+        print(f"🔍 Status: {response.status_code}")
+        print(f"🔍 Response: {response.text}")
+        
+        if response.status_code != 200:
+            return {"error": f"Stripe API error: {response.status_code} - {response.text}"}
+        
+        session = response.json()
+        return {
+            "success": True,
+            "session": session,
+            "has_url": 'url' in session,
+            "url": session.get('url'),
+            "id": session.get('id')
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur test: {e}")
+        return {"error": str(e)}
+
 @app.post("/api/auth/validate-firebase")
 async def validate_firebase_token(token_data: dict):
     """Valider un token Firebase et retourner les infos utilisateur"""
