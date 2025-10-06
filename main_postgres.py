@@ -582,6 +582,46 @@ async def root():
 async def test():
     return {"status": "ok", "message": "PostgreSQL backend is working", "timestamp": datetime.utcnow().isoformat()}
 
+@app.post("/api/create-database")
+async def create_database():
+    """Créer la base de données cvbien_db si elle n'existe pas"""
+    try:
+        # Connexion directe à PostgreSQL (sans spécifier la base)
+        import psycopg2
+        from urllib.parse import urlparse
+        
+        # Parser l'URL de la base de données
+        parsed_url = urlparse(DATABASE_URL)
+        
+        # Connexion au serveur PostgreSQL (sans base spécifique)
+        conn = psycopg2.connect(
+            host=parsed_url.hostname,
+            port=parsed_url.port,
+            user=parsed_url.username,
+            password=parsed_url.password,
+            database='postgres'  # Connexion à la base par défaut
+        )
+        conn.autocommit = True
+        cursor = conn.cursor()
+        
+        # Vérifier si la base existe
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname = 'cvbien_db'")
+        exists = cursor.fetchone()
+        
+        if not exists:
+            # Créer la base de données
+            cursor.execute("CREATE DATABASE cvbien_db")
+            cursor.close()
+            conn.close()
+            return {"status": "success", "message": "Base de données cvbien_db créée avec succès"}
+        else:
+            cursor.close()
+            conn.close()
+            return {"status": "info", "message": "Base de données cvbien_db existe déjà"}
+            
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur création base: {str(e)}"}
+
 # Endpoint de migration des données SQLite vers PostgreSQL
 @app.post("/api/migrate-sqlite-to-postgres")
 async def migrate_sqlite_to_postgres():

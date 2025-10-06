@@ -12,5 +12,7 @@
   },
   "forceDeploy": true,
   "testPersistence": "2025-01-05-23:50",
-  "forceRedeploy": "2025-01-05-23:55"
+  "forceRedeploy": "2025-01-05-23:55",
+  "emergencyRedeploy": "2025-01-05-23:58",
+  "usePostgreSQL": true
 }
