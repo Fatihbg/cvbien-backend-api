@@ -191,12 +191,13 @@ async def get_user_profile(current_user: dict = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 @app.post("/api/user/consume-credits")
-async def consume_credits(amount: int, current_user: dict = Depends(verify_token)):
+async def consume_credits(request: dict, current_user: dict = Depends(verify_token)):
     """Consommer des crédits"""
     if not db:
         raise HTTPException(status_code=503, detail="Firebase non disponible")
     
     try:
+        amount = request.get("amount", 1)
         uid = current_user['uid']
         user_doc = db.collection('users').document(uid).get()
         
