@@ -1,1 +1,1 @@
-web: python start.py
+web: python main_auth.py
