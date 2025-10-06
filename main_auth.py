@@ -79,6 +79,7 @@ class PaymentIntentResponse(BaseModel):
     client_secret: str
     amount: int
     credits: int
+    checkout_url: str
 
 # Initialisation de l'API
 app = FastAPI(title="CVbien Auth API", version="1.0.0")
@@ -513,10 +514,14 @@ async def create_payment_intent(
         # Simuler la création d'une intention de paiement
         client_secret = f"pi_test_{uuid.uuid4().hex[:24]}"
         
+        # Simuler une URL de checkout (pour les tests)
+        checkout_url = f"https://checkout.stripe.com/test/{client_secret}"
+        
         response = PaymentIntentResponse(
             client_secret=client_secret,
             amount=payment_data.amount,
-            credits=payment_data.credits
+            credits=payment_data.credits,
+            checkout_url=checkout_url
         )
         
         print(f"✅ DEBUG: Réponse générée: {response}")
