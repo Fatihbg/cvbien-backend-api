@@ -666,14 +666,67 @@ async def test_stripe():
             "api_key": f"{stripe.api_key[:10]}..." if stripe.api_key else "None"
         }
 
+@app.post("/api/test-payment")
+async def test_payment():
+    """Tester la création d'une session de paiement"""
+    try:
+        print("🔧 DEBUG: Test de création de session de paiement")
+        
+        # Test avec des données factices
+        test_data = {
+            "credits": 5,
+            "amount": 1,
+            "user_id": "test_user"
+        }
+        
+        # Créer une session de checkout Stripe
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {
+                        'name': f'{test_data["credits"]} crédits CVbien',
+                    },
+                    'unit_amount': test_data["amount"] * 100,  # Montant en centimes
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url='https://cvbien4.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url='https://cvbien4.vercel.app/payment-cancel',
+            metadata={
+                'user_id': test_data["user_id"],
+                'credits': str(test_data["credits"]),
+                'amount': str(test_data["amount"])
+            }
+        )
+        
+        return {
+            "status": "success",
+            "message": "Session de paiement créée avec succès",
+            "session_id": checkout_session.id,
+            "checkout_url": checkout_session.url
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur test paiement: {str(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return {
+            "status": "error",
+            "message": f"Erreur: {str(e)}",
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/version")
 async def get_version():
     return {
-        "version": "2.8.0",
-        "status": "Stripe Debug Added",
-        "timestamp": "2025-01-05 23:35",
-        "fix": "Added detailed debugging and Stripe test endpoint",
-        "action": "STRIPE_DEBUG_DEPLOY"
+        "version": "2.9.0",
+        "status": "Payment Test Added",
+        "timestamp": "2025-01-05 23:40",
+        "fix": "Added payment test endpoint for debugging",
+        "action": "PAYMENT_TEST_DEPLOY"
     }
 
 @app.get("/api/admin/users")
