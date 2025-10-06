@@ -223,6 +223,90 @@ async def consume_credits(request: dict, current_user: dict = Depends(verify_tok
         print(f"❌ Erreur consommation crédits: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
+@app.post("/api/payments/create-payment-intent")
+async def create_payment_intent(request: dict, current_user: dict = Depends(verify_token)):
+    """Créer une intention de paiement Stripe"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        import stripe
+        
+        # Configuration Stripe
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+        if not stripe.api_key:
+            raise HTTPException(status_code=500, detail="Configuration Stripe manquante")
+        
+        amount = request.get("amount", 1)  # En euros
+        credits = amount * 5  # 1€ = 5 crédits
+        
+        # Créer une session Stripe
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {
+                        'name': f'{credits} crédits CV Bien',
+                    },
+                    'unit_amount': amount * 100,  # En centimes
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f'https://cvbien4.vercel.app/?payment=success&credits={credits}&user_id={current_user["uid"]}',
+            cancel_url='https://cvbien4.vercel.app/?payment=cancel',
+            metadata={
+                'user_id': current_user['uid'],
+                'credits': str(credits)
+            }
+        )
+        
+        return {
+            "success": True,
+            "checkout_url": session.url,
+            "session_id": session.id
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur création paiement: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur paiement: {str(e)}")
+
+@app.post("/api/payments/confirm-payment")
+async def confirm_payment(request: dict):
+    """Confirmer un paiement et ajouter les crédits"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        user_id = request.get("user_id")
+        credits = request.get("credits", 0)
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id manquant")
+        
+        # Récupérer l'utilisateur
+        user_doc = db.collection('users').document(user_id).get()
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        user_data = user_doc.to_dict()
+        current_credits = user_data.get("credits", 0)
+        new_credits = current_credits + credits
+        
+        # Mettre à jour les crédits
+        db.collection('users').document(user_id).update({"credits": new_credits})
+        
+        return {
+            "success": True,
+            "credits": new_credits,
+            "added": credits
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur confirmation paiement: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur confirmation: {str(e)}")
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     print(f"🚀 Démarrage du serveur Firebase sur le port {port}")
