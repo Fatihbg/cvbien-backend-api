@@ -740,26 +740,19 @@ async def optimize_cv(request: CVGenerationRequest):
     if not OPENAI_AVAILABLE:
         raise HTTPException(status_code=503, detail="OpenAI SDK non disponible")
     
-    # Initialisation lazy du client OpenAI
-    current_client = client
-    if not current_client:
-        try:
-            api_key = os.getenv("OPENAI_API_KEY")
-            if api_key:
-                print(f"🔧 Initialisation lazy OpenAI avec clé de {len(api_key)} caractères")
-                current_client = openai.OpenAI(api_key=api_key)
-                print("✅ Client OpenAI créé avec succès")
-            else:
-                raise HTTPException(status_code=503, detail="OPENAI_API_KEY manquante")
-        except Exception as e:
-            print(f"❌ Erreur initialisation lazy OpenAI: {e}")
-            raise HTTPException(status_code=503, detail=f"Erreur OpenAI: {str(e)}")
-    
     try:
         print("🤖 Génération CV avec OpenAI...")
         
+        # Configuration directe de l'API key
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=503, detail="OPENAI_API_KEY manquante")
+        
+        # Utiliser l'ancienne API pour éviter les conflits
+        openai.api_key = api_key
+        
         # Appel à OpenAI avec prompt Mimi Prime
-        response = current_client.chat.completions.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {
