@@ -16,6 +16,15 @@ except ImportError:
     FIREBASE_AVAILABLE = False
     print("⚠️ Firebase Admin SDK non installé")
 
+# Stripe import
+try:
+    import stripe
+    STRIPE_AVAILABLE = True
+    print("✅ Stripe importé avec succès")
+except ImportError:
+    STRIPE_AVAILABLE = False
+    print("⚠️ Stripe non installé")
+
 app = FastAPI(title="CV Bien API", version="6.1.0")
 
 # Configuration CORS
@@ -250,7 +259,8 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
         raise HTTPException(status_code=503, detail="Firebase non disponible")
     
     try:
-        import stripe
+        if not STRIPE_AVAILABLE:
+            raise HTTPException(status_code=500, detail="Stripe non disponible")
         
         # Configuration Stripe
         stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
