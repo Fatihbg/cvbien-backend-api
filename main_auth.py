@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status, Request, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
@@ -7,7 +7,6 @@ import jwt
 import hashlib
 import sqlite3
 import os
-import re
 from datetime import datetime, timedelta
 import uuid
 # import stripe  # Désactivé pour simulation
@@ -87,15 +86,7 @@ app = FastAPI(title="CVbien Auth API", version="1.0.0")
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://localhost:5174", 
-        "http://localhost:5175", 
-        "http://localhost:3000",
-        "https://cvbien4.vercel.app",
-        "https://cvbien4-pwk5k2jt6-fatihdag03-8928s-projects.vercel.app",
-        "https://*.vercel.app"
-    ],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -360,7 +351,7 @@ async def buy_credits(purchase: CreditPurchase, user_id: str = Depends(verify_to
         
         # Calculer le nombre de crédits selon le montant
         if purchase.amount == 1:
-            credits_to_add = 10  # 1€ = 10 crédits
+            credits_to_add = 5  # 1€ = 5 crédits
         elif purchase.amount == 5:
             credits_to_add = 100  # 5€ = 100 crédits
         else:
@@ -494,23 +485,52 @@ async def save_cv(cv_data: dict, user_id: str = Depends(verify_token)):
 @app.post("/api/payments/create-payment-intent", response_model=PaymentIntentResponse)
 async def create_payment_intent(
     payment_data: PaymentIntentRequest,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    user_id: str = Depends(verify_token)
 ):
     """Créer une intention de paiement (simulation)"""
     try:
-        # Vérifier le token
-        user = get_current_user(credentials.credentials)
+        print(f"🔧 DEBUG: Création intention de paiement")
+        print(f"🔧 DEBUG: - User ID: {user_id}")
+        print(f"🔧 DEBUG: - Credits: {payment_data.credits}")
+        print(f"🔧 DEBUG: - Amount: {payment_data.amount}")
+        print(f"🔧 DEBUG: - Type credits: {type(payment_data.credits)}")
+        print(f"🔧 DEBUG: - Type amount: {type(payment_data.amount)}")
+        
+        # Validation des données
+        if not isinstance(payment_data.credits, int) or payment_data.credits <= 0:
+            raise ValueError(f"Credits invalides: {payment_data.credits}")
+        
+        if not isinstance(payment_data.amount, (int, float)) or payment_data.amount <= 0:
+            raise ValueError(f"Amount invalide: {payment_data.amount}")
         
         # Simuler la création d'une intention de paiement
         client_secret = f"pi_test_{uuid.uuid4().hex[:24]}"
         
-        return PaymentIntentResponse(
+        response = PaymentIntentResponse(
             client_secret=client_secret,
             amount=payment_data.amount,
             credits=payment_data.credits
         )
+        
+        print(f"✅ DEBUG: Réponse générée: {response}")
+        return response
+        
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"❌ Erreur création intention de paiement: {str(e)}")
+        print(f"❌ Type d'erreur: {type(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
+
+@app.get("/version")
+async def get_version():
+    return {
+        "version": "2.6.0",
+        "status": "Payment Fix Deployed",
+        "timestamp": "2025-01-05 23:25",
+        "fix": "Fixed payment 400 error - verify_token and amount format",
+        "action": "PAYMENT_FIX_DEPLOY"
+    }
 
 @app.get("/api/admin/users")
 async def get_all_users():
@@ -601,607 +621,7 @@ async def get_all_users():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données")
 
-# Endpoint pour optimiser un CV (version flexible - accepte FormData ou JSON)
-@app.post("/optimize-cv")
-async def optimize_cv(
-    request: Request,
-    cv_file: Optional[UploadFile] = File(None),
-    job_offer: Optional[str] = Form(None)
-):
-    try:
-        print(f"📝 Requête reçue - Content-Type: {request.headers.get('content-type', 'unknown')}")
-        
-        cv_content = ""
-        
-        # Vérifier si c'est du FormData (fichier uploadé)
-        if cv_file is not None:
-            print(f"📁 Fichier reçu: {cv_file.filename}")
-            cv_content = await cv_file.read()
-            if isinstance(cv_content, bytes):
-                cv_content = cv_content.decode('utf-8')
-            print(f"📝 Contenu du fichier: {len(cv_content)} caractères")
-        else:
-            # Essayer de lire du JSON
-            try:
-                json_data = await request.json()
-                print(f"📝 JSON reçu: {json_data}")
-                cv_content = json_data.get("cv_content", "") or json_data.get("content", "") or json_data.get("text", "") or str(json_data)
-                print(f"📝 Contenu JSON extrait: {len(cv_content)} caractères")
-            except:
-                print("📝 Pas de JSON valide, utilisation de données brutes")
-                cv_content = "Contenu CV simulé pour test"
-        
-        if not cv_content:
-            cv_content = "Contenu CV par défaut"
-        
-        # Génération réelle avec OpenAI
-        try:
-            import openai
-            
-            # Configuration OpenAI
-            api_key = os.getenv("OPENAI_API_KEY")
-            
-            if not api_key:
-                raise Exception("Clé API OpenAI manquante")
-            
-            print(f"🤖 Génération CV avec OpenAI...")
-            
-            # Prompt sophistiqué "Ronaldo Prime" pour CV de qualité
-            prompt = f"""Tu es un expert en recrutement et en intelligence artificielle pour l'optimisation de CV. Ta mission est d'analyser l'offre d'emploi et d'optimiser le CV pour qu'il corresponde PARFAITEMENT au poste recherché. Tu dois être STRATÉGIQUE et INTELLIGENT dans ton approche.
-
-🚨🚨🚨 RÈGLE DE LANGUE ABSOLUE - PRIORITÉ #1 - OBLIGATOIRE 🚨🚨🚨
-1. LIS la description d'emploi ci-dessous
-2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, etc.)
-3. GÉNÈRE le CV ENTIER dans cette langue détectée
-4. Si l'offre est en ANGLAIS → CV en ANGLAIS avec "PROFESSIONAL SUMMARY", "PROFESSIONAL EXPERIENCE", etc.
-5. Si l'offre est en FRANÇAIS → CV en FRANÇAIS avec "RÉSUMÉ PROFESSIONNEL", "EXPÉRIENCE PROFESSIONNELLE", etc.
-6. Si l'offre est en ESPAGNOL → CV en ESPAGNOL avec "RESUMEN PROFESIONAL", "EXPERIENCIA PROFESIONAL", etc.
-7. JAMAIS de mélange de langues dans le CV
-8. Cette règle est ABSOLUE et doit être respectée à 100%
-
-**STRATÉGIE D'INTELLIGENCE ARTIFICIELLE POUR LE MATCHING CV-JOB :**
-
-1. **ANALYSE INTELLIGENTE DE L'OFFRE (CRITIQUE) :**
-   - **ÉTAPE 1 - DÉTECTION LANGUE** : Analyse la description d'emploi pour identifier sa langue (français, anglais, espagnol, allemand, italien, etc.)
-   - **ÉTAPE 2 - ADAPTATION LANGUE** : Génère TOUT le CV dans cette langue détectée
-   - Identifie les mots-clés techniques, les compétences requises, et les qualifications spécifiques
-   - Détecte le secteur d'activité, le niveau de poste, et les responsabilités clés
-   - Analyse le vocabulaire utilisé et le style de communication attendu
-   - Identifie les soft skills et hard skills prioritaires
-
-2. **TRANSFORMATION STRATÉGIQUE DU CV :**
-   - **Repositionnement intelligent des expériences** : Reformule chaque poste pour montrer comment il est lié au poste recherché
-   - **Connexion des formations** : Montre comment les diplômes/formations sont pertinents pour le poste
-   - **Quantification des résultats** : Transforme les réalisations vagues en résultats mesurables qui correspondent au secteur
-   - **Vocabulaire sectoriel** : Utilise le jargon et les termes techniques du domaine ciblé
-
-3. **MATCHING INTELLIGENT ET RÉALISTE DES COMPÉTENCES :**
-   - **Soft Skills (TOUJOURS ajouter)** : Si l'offre demande "leadership", "communication", "travail d'équipe", etc., ajoute-les intelligemment
-   - **Compétences techniques (REALISTE ET NATUREL)** : 
-     * Si le CV mentionne "programmation" et l'offre demande "Python" → "Intérêt pour le développement Python"
-     * Si l'offre demande "Mercedes Classe G moteur 250 turbo" → "Intérêt pour Mercedes Classe G" (pas trop spécifique)
-     * Si le CV ne mentionne PAS une compétence technique demandée → "Intérêt pour [compétence générale]" ou "Sensibilité à [domaine]"
-     * JAMAIS prétendre être expert dans une technologie non mentionnée dans le CV original
-   - **Compétences transférables** : Montre comment les compétences existantes peuvent s'appliquer au nouveau poste
-
-4. **RESTRUCTURATION STRATÉGIQUE :**
-   - Réorganise les sections par ordre de pertinence pour le poste
-   - Mets en avant les expériences les plus pertinentes
-   - Adapte le résumé professionnel pour qu'il colle parfaitement au profil recherché
-
-5. **CONTENU INTACT MAIS INTELLIGENT :** Tu dois **ABSOLUMENT** inclure **TOUTES** les expériences et formations existantes, mais les reformuler de manière stratégique pour qu'elles correspondent au poste. 
-
-**🔥 CRITIQUE - PRÉSERVER TOUS LES LIENS :** Tu dois **OBLIGATOIREMENT** conserver **TOUS** les liens présents dans le CV original (LinkedIn, Portfolio, Site web, GitHub, etc.) dans le CV optimisé. Ne les supprime JAMAIS et ne les modifie PAS. Ils doivent apparaître exactement comme dans le CV original.
-
-**🚫 INTERDICTION ABSOLUE :** Ne JAMAIS ajouter de liens (LinkedIn, Portfolio, etc.) qui ne sont PAS présents dans le CV original. Si le CV original n'a pas de LinkedIn, n'en ajoute PAS.
-
-**🚫 INTERDICTION ABSOLUE - SECTIONS INUTILES :** Ne JAMAIS ajouter de sections comme "LIENS", "OBJECTIF DE PAGE UNIQUE", ou tout autre texte explicatif à la fin du CV. Le CV doit se terminer directement après la dernière section pertinente.
-
-**🚫 INTERDICTION ABSOLUE - SECTION LIENS :** Ne JAMAIS créer une section "LIENS" séparée. Si des liens existent dans le CV original, ils doivent être intégrés naturellement dans les informations de contact ou dans le contenu des sections, pas dans une section dédiée.
-
-6. **EXEMPLES CONCRETS DE TRANSFORMATION OBLIGATOIRES :**
-   - **Expérience** : "Vendeur dans un magasin" → Dans la description : "Développement de compétences en relation client et négociation commerciale"
-   - **Formation** : "Master en Management" → Dans la description : "Formation en management stratégique et leadership"
-   - **Compétences** : Si l'offre demande "Excel" et le CV ne le mentionne pas → "Intérêt pour les outils d'analyse de données"
-   - **Compétences spécifiques** : Si l'offre demande "Mercedes Classe G moteur 250 turbo" → "Intérêt pour Mercedes Classe G" (général, pas trop spécifique)
-   - **Soft Skills** : Toujours ajouter les soft skills demandés (leadership, communication, etc.) même s'ils ne sont pas explicitement dans le CV
-   - **LIENS (CRITIQUE)** : Si le CV original contient "LinkedIn: linkedin.com/in/johndoe" → Le CV optimisé DOIT contenir exactement "LinkedIn: linkedin.com/in/johndoe"
-
-7. **INSTRUCTIONS CRITIQUES POUR LES COMPÉTENCES :**
-   - **OBLIGATOIRE** : Créer une section TECHNICAL SKILLS avec BEAUCOUP de compétences
-   - **Format par lignes** :
-     * Ligne 1 : "Compétences techniques : [compétences du CV], [intérêt pour compétences demandées], [compétences du secteur]"
-     * Ligne 2 : "Soft skills : [soft skills du CV], [soft skills demandés], [autres soft skills pertinents]"
-     * Ligne 3 : "Outils : [outils du CV], [intérêt pour outils demandés], [outils du secteur]"
-     * Ligne 4 : "Langues : [langues du CV], [langues demandées]"
-     * Ligne 5 : "Certifications : [certifications du CV], [intérêt pour certifications du secteur]"
-   - **Exemple** : "Compétences techniques : Python, JavaScript, Intérêt pour React, Vue.js, Node.js, SQL, Git"
-   - **Exemple** : "Soft skills : Leadership, Communication, Travail d'équipe, Gestion de projet, Résolution de problèmes"
-   - **Exemple** : "Outils : Excel, PowerPoint, Intérêt pour Tableau, Power BI, Jira, Confluence"
-   - **NE PAS** utiliser de puces dans cette section
-   - **AJOUTER** beaucoup de compétences pertinentes pour le secteur
-
-8. **INSTRUCTIONS CRITIQUES POUR LES EXPÉRIENCES :**
-   - **OBLIGATOIRE** : Reformule chaque expérience pour qu'elle soit pertinente au poste recherché
-   - **Format** : "[Titre du poste] - [Entreprise] ([Dates])"
-   - **Description** : Reformule les tâches et compétences pour qu'elles correspondent au poste recherché
-   - **Exemple** : "Vendeur - Magasin ABC (2020-2022)" puis dans la description : "Développement de compétences en relation client et négociation commerciale"
-
-9. **INSTRUCTIONS CRITIQUES POUR LES FORMATIONS :**
-   - **OBLIGATOIRE** : Reformule chaque formation pour qu'elle soit pertinente au poste recherché
-   - **Format** : "[Diplôme] - [Institution] ([Dates])"
-   - **Description** : Reformule les compétences acquises pour qu'elles correspondent au poste recherché
-   - **Exemple** : "Master en Management - ICHEC (2023-2025)" puis dans la description : "Formation en leadership et stratégie d'entreprise"
-
-10. **MOTS-CLÉS ATS (CRITIQUE) :** Utilise la terminologie EXACTE de l'offre d'emploi. Si l'offre dit "Business Analyst", utilise "Business Analyst" et non "Analyste d'affaires".
-
-11. **Nom & Prénom :** Extrait le nom et prénom, en utilisant UNIQUEMENT les balises <NAME> et </NAME>.
-
-12. **Contacts & Liens (CRITIQUE) :** Extrait les coordonnées. Si un lien (LinkedIn, Portfolio, Site web, etc.) existe dans le CV original, tu **DOIS ABSOLUMENT** l'inclure dans le CV final. **NE JAMAIS INVENTER DE LIEN** et **NE JAMAIS SUPPRIMER UN LIEN EXISTANT**. Les liens doivent être intégrés dans les informations de contact, PAS dans une section séparée "LIENS". Utilise UNIQUEMENT les balises <CONTACT> et </CONTACT>.
-
-13. **Titre de Poste :** Génère un titre qui correspond EXACTEMENT au poste recherché, en utilisant UNIQUEMENT les balises <TITLE> et </TITLE>. Le titre doit être CENTRÉ.
-
-14. **Résumé :** Génère UN SEUL résumé de 3-4 lignes qui montre clairement pourquoi le candidat est parfait pour ce poste spécifique, SANS mentionner le nom de l'entreprise ou du poste spécifique. Le résumé doit être CENTRÉ. Utilise UNIQUEMENT les balises <SUMMARY> et </SUMMARY>.
-
-15. **Objectif de Page Unique (CRITIQUE) :** Le CV doit tenir sur **UNE PAGE COMPLÈTE** (pas la moitié de page). Utilise un phrasé concis mais informatif pour remplir la page entière.
-
-**🚨 CONTENU DÉTAILLÉ OBLIGATOIRE - PRIORITÉ MAXIMALE 🚨**
-
-**📝 PHRASES LONGUES ET DÉTAILLÉES OBLIGATOIRES :**
-- **Chaque expérience** : Ajoute 3-4 PHRASES TRÈS LONGUES (20-30 mots chacune) avec des actions concrètes, des résultats quantifiés avec CHIFFRES et POURCENTAGES, et des impacts mesurables
-- **Chaque formation** : Ajoute 3-4 PHRASES TRÈS LONGUES (20-30 mots chacune) décrivant les compétences acquises, leur application pratique, et leur pertinence pour le poste avec des détails concrets
-- **Résumé professionnel** : 2-3 phrases détaillées et persuasives (pas plus, c'est suffisant)
-- **Compétences** : Ajoute BEAUCOUP de compétences pertinentes avec des niveaux de maîtrise
-- **Réalisations OBLIGATOIRES avec CHIFFRES** : Quantifie et détaille chaque réalisation avec des chiffres concrets, des pourcentages, des montants, des volumes, des délais, etc.
-- **Descriptions** : Utilise des verbes d'action forts, des termes techniques du secteur, et des contextes spécifiques
-- **CHIFFRES ET POURCENTAGES OBLIGATOIRES** : Chaque description d'expérience DOIT contenir au moins 2-3 chiffres concrets :
-  * Nombre de clients/projets gérés (ex: "50+ clients", "15 projets")
-  * Pourcentages d'amélioration (ex: "+25% d'efficacité", "+40% de satisfaction client")
-  * Montants/budgets (ex: "budget de 500K€", "économie de 50K€")
-  * Délais (ex: "réduction de 30% des délais", "livraison en 2 semaines")
-  * Tailles d'équipes (ex: "équipe de 8 personnes", "management de 15 collaborateurs")
-  * Volumes (ex: "1000+ transactions", "50 rapports mensuels")
-- **Exemples de phrases avec chiffres** : 
-  * "Gestion stratégique d'un portefeuille de 75+ clients B2B avec un budget total de 2M€, générant une augmentation de 35% du chiffre d'affaires et une amélioration de 28% de la satisfaction client en 18 mois"
-  * "Formation approfondie en management stratégique et leadership, incluant la gestion d'équipes de 12+ collaborateurs, l'élaboration de stratégies d'entreprise, et l'optimisation des processus opérationnels avec une réduction de 40% des coûts"
-- **Impact** : Montre l'impact concret de chaque action avec des chiffres et des pourcentages
-- **Responsabilités** : Détaille les responsabilités principales et secondaires avec des exemples concrets et des métriques
-- **Projets** : Mentionne des projets concrets avec leurs résultats, leurs budgets, et leurs impacts chiffrés
-- **Contexte** : Ajoute toujours le contexte (secteur, taille d'entreprise, équipe, budget, etc.) avec des chiffres
-
-16. **Titres de Section :** Chaque titre de section doit être **écrit en MAJUSCULES**.
-
-CV ORIGINAL:
-{cv_content}
-
-DESCRIPTION DU POSTE:
-{job_offer or "Poste non spécifié"}
-
-Génère maintenant le CV optimisé en respectant TOUTES ces instructions."""
-            
-            # Nouvelle API OpenAI 1.0+ - Configuration minimale SANS PROXIES
-            client = openai.OpenAI(
-                api_key=api_key,
-                timeout=30.0
-            )
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "Tu es un expert en recrutement et optimisation de CV. Tu optimises les CV pour qu'ils correspondent parfaitement aux postes demandés."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=2000,
-                temperature=0.7
-            )
-            
-            optimized_content = response.choices[0].message.content.strip()
-            
-            # Calculer un score ATS basique
-            ats_score = min(95, 60 + len([word for word in (job_offer or "").lower().split() if word in optimized_content.lower()]) * 2)
-            
-            # Suggestions d'amélioration
-            suggestions = [
-                "CV optimisé avec les mots-clés du poste",
-                "Structure professionnelle améliorée",
-                "Expériences quantifiées et valorisées",
-                "Adaptation au secteur d'activité"
-            ]
-            
-            print(f"✅ CV généré avec succès - Score ATS: {ats_score}")
-            
-            return {
-                "success": True,
-                "message": "CV optimisé avec succès",
-                "optimized_cv": {
-                    "title": "CV Optimisé",
-                    "content": optimized_content,
-                    "score": ats_score,
-                    "suggestions": suggestions,
-                    "original_length": len(cv_content),
-                    "optimized_length": len(optimized_content)
-                }
-            }
-            
-        except Exception as e:
-            print(f"❌ Erreur OpenAI: {e}")
-            # Fallback en cas d'erreur
-            return {
-                "success": True,
-                "message": "CV optimisé avec succès (mode fallback)",
-                "optimized_cv": {
-                    "title": "CV Optimisé",
-                    "content": f"""CV OPTIMISÉ
-
-{cv_content[:500]}...
-
-[CV optimisé pour le poste: {job_offer or "Non spécifié"}]
-
-COMPETENCES ADAPTÉES:
-- Analyse des besoins métier
-- Gestion de projet
-- Communication client
-- Résolution de problèmes
-
-EXPERIENCE PROFESSIONNELLE:
-- Expériences reformulées pour correspondre au poste
-- Mots-clés du secteur intégrés
-- Réalisations quantifiées
-
-FORMATION:
-- Diplômes pertinents mis en avant
-- Certifications sectorielles""",
-                    "score": 75,
-                    "suggestions": [
-                        "CV adapté au poste demandé",
-                        "Mots-clés sectoriels intégrés",
-                        "Structure professionnelle",
-                        "Expériences valorisées"
-                    ],
-                    "original_length": len(cv_content),
-                    "optimized_length": len(cv_content) + 300
-                }
-            }
-    except Exception as e:
-        print(f"❌ Erreur optimisation CV: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail="Erreur lors de l'optimisation du CV")
-
-@app.post("/generate-pdf")
-async def generate_pdf(cv_text: str = Form(...)):
-    """Endpoint pour générer un PDF à partir du texte du CV"""
-    try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        import io
-        
-        # Créer un buffer pour le PDF
-        buffer = io.BytesIO()
-        
-        # Créer le document PDF avec marges réduites
-        doc = SimpleDocTemplate(buffer, pagesize=letter, 
-                               leftMargin=0.5*inch, rightMargin=0.5*inch,
-                               topMargin=0.5*inch, bottomMargin=0.5*inch)
-        styles = getSampleStyleSheet()
-        
-        # Styles professionnels avec header centré et espacement compact
-        name_style = ParagraphStyle(
-            'NameStyle',
-            parent=styles['Heading1'],
-            fontSize=16,
-            leading=18,
-            textColor='#1e3a8a',  # Bleu sérieux
-            alignment=1,  # CENTRÉ
-            spaceAfter=3,  # Réduit
-            fontName='Helvetica-Bold'
-        )
-        
-        contact_style = ParagraphStyle(
-            'ContactStyle',
-            parent=styles['Normal'],
-            fontSize=8,  # Plus petit que l'image
-            leading=9,
-            textColor='#000000',
-            alignment=1,  # CENTRÉ
-            spaceAfter=4  # Réduit
-        )
-        
-        # Nouveau style pour le rôle - plus grand et centré
-        role_style = ParagraphStyle(
-            'RoleStyle',
-            parent=styles['Normal'],
-            fontSize=14,  # Plus grand
-            leading=16,
-            textColor='#000000',
-            alignment=1,  # CENTRÉ
-            spaceAfter=6,  # Réduit
-            fontName='Helvetica-Bold'
-        )
-        
-        section_style = ParagraphStyle(
-            'SectionStyle',
-            parent=styles['Heading2'],
-            fontSize=10,  # Plus petit
-            leading=11,
-            textColor='#1e3a8a',  # Bleu sérieux
-            spaceBefore=6,  # Réduit
-            spaceAfter=3,  # Réduit
-            fontName='Helvetica-Bold'
-        )
-        
-        job_title_style = ParagraphStyle(
-            'JobTitleStyle',
-            parent=styles['Normal'],
-            fontSize=10,  # Réduit
-            leading=11,
-            textColor='#000000',
-            spaceAfter=1,  # Réduit
-            fontName='Helvetica-Bold'
-        )
-        
-        company_style = ParagraphStyle(
-            'CompanyStyle',
-            parent=styles['Normal'],
-            fontSize=9,  # Réduit
-            leading=10,
-            textColor='#000000',
-            spaceAfter=1  # Réduit
-        )
-        
-        date_style = ParagraphStyle(
-            'DateStyle',
-            parent=styles['Normal'],
-            fontSize=8,  # Réduit
-            leading=9,
-            textColor='#000000',
-            alignment=2,  # Aligné à droite
-            spaceAfter=1  # Réduit
-        )
-        
-        bullet_style = ParagraphStyle(
-            'BulletStyle',
-            parent=styles['Normal'],
-            fontSize=8,  # Réduit
-            leading=9,  # Réduit
-            textColor='#000000',
-            leftIndent=10,  # Réduit
-            spaceAfter=0.5,  # Très réduit
-            bulletIndent=6  # Réduit
-        )
-        
-        normal_style = ParagraphStyle(
-            'NormalStyle',
-            parent=styles['Normal'],
-            fontSize=8,  # Réduit
-            leading=9,  # Réduit
-            textColor='#000000',
-            spaceAfter=1  # Réduit
-        )
-        
-        # Style pour le résumé professionnel - plus compact
-        summary_style = ParagraphStyle(
-            'SummaryStyle',
-            parent=styles['Normal'],
-            fontSize=8,  # Petit
-            leading=10,  # Compact
-            textColor='#000000',
-            spaceAfter=4,  # Espacement après le résumé
-            alignment=0  # Justifié
-        )
-        
-        # Parser intelligent pour formatage professionnel avec header centré
-        lines = cv_text.split('\n')
-        story = []
-        
-        i = 0
-        current_section = ''
-        header_done = False
-        
-        while i < len(lines):
-            line = lines[i].strip()
-            if not line:
-                i += 1
-                continue
-            
-            # PHASE 1: Header centré (nom, contact, rôle)
-            if not header_done:
-                # Détecter le nom (ligne en majuscules, pas trop longue, pas une section)
-                if (line.isupper() and len(line) < 50 and len(line) > 3 and 
-                    not line.startswith('PROFESSIONAL') and not line.startswith('EXPERIENCE') and 
-                    not line.startswith('EDUCATION') and not line.startswith('SKILLS')):
-                    story.append(Paragraph(line, name_style))
-                    i += 1
-                    continue
-                    
-                # Détecter les contacts (contient @ ou | ou téléphone)
-                elif ('@' in line or '|' in line or 
-                      any(char.isdigit() for char in line) and len(line) > 5):
-                    story.append(Paragraph(line, contact_style))
-                    i += 1
-                    continue
-                    
-                # Détecter le rôle (ligne après contact, pas une section)
-                elif (len(line) > 5 and len(line) < 80 and 
-                      not line.startswith('PROFESSIONAL') and not line.startswith('EXPERIENCE') and 
-                      not line.startswith('EDUCATION') and not line.startswith('SKILLS') and
-                      not line.startswith('RÉSUMÉ') and not line.startswith('SUMMARY')):
-                    story.append(Paragraph(line, role_style))
-                    i += 1
-                    continue
-                    
-                # Fin du header quand on arrive à une section ou résumé
-                elif (line.startswith('PROFESSIONAL SUMMARY') or line.startswith('RÉSUMÉ PROFESSIONNEL') or
-                      line.startswith('PROFESSIONAL EXPERIENCE') or line.startswith('EXPÉRIENCE PROFESSIONNELLE')):
-                    header_done = True
-                    # Ignorer "PROFESSIONAL SUMMARY" - on ne l'affiche pas
-                    if line.startswith('PROFESSIONAL SUMMARY') or line.startswith('RÉSUMÉ PROFESSIONNEL'):
-                        # Lire le contenu du résumé sans l'afficher comme titre
-                        i += 1
-                        summary_content = ""
-                        while i < len(lines) and lines[i].strip() and not lines[i].strip().startswith(('PROFESSIONAL EXPERIENCE', 'EDUCATION', 'TECHNICAL SKILLS')):
-                            summary_content += lines[i].strip() + " "
-                            i += 1
-                        if summary_content.strip():
-                            story.append(Paragraph(summary_content.strip(), summary_style))
-                        continue
-                    # Continuer avec la section suivante
-                    continue
-                    
-                else:
-                    i += 1
-                    continue
-            
-            # PHASE 2: Sections avec lignes horizontales
-            # Détecter les titres de section
-            if (line in ['PROFESSIONAL EXPERIENCE', 'EDUCATION', 'TECHNICAL SKILLS', 
-                        'CERTIFICATIONS & ACHIEVEMENTS', 'EXPÉRIENCE PROFESSIONNELLE', 'FORMATION', 
-                        'COMPÉTENCES', 'COMPETENCES', 'PROJECTS', 'OTHER'] or 
-                line.endswith('EXPERIENCE') or line.endswith('FORMATION') or line.endswith('SKILLS')):
-                
-                # Ajouter la ligne horizontale avant le titre
-                from reportlab.platypus import HRFlowable
-                story.append(HRFlowable(width="100%", thickness=0.5, color='#1e3a8a'))
-                story.append(Spacer(1, 2))  # Réduit
-                
-                story.append(Paragraph(line, section_style))
-                current_section = line
-                i += 1
-                continue
-                
-            # Détecter les postes/titres (ligne suivie d'une entreprise ou dates)
-            if (current_section and ('EXPERIENCE' in current_section or 'PROJECTS' in current_section) and
-                len(line) > 5 and len(line) < 80 and not line.startswith('•') and not line.startswith('-')):
-                # Vérifier si c'est un poste (contient des mots-clés de postes)
-                job_keywords = ['analyst', 'consultant', 'developer', 'manager', 'engineer', 'specialist', 'coordinator', 
-                              'director', 'lead', 'senior', 'junior', 'intern', 'assistant', 'ceo', 'founder', 'owner']
-                if any(keyword in line.lower() for keyword in job_keywords):
-                    # Poste avec entreprise sur la même ligne ou ligne suivante
-                    if ' - ' in line:
-                        parts = line.split(' - ', 1)
-                        story.append(Paragraph(parts[0], job_title_style))
-                        if len(parts) > 1:
-                            story.append(Paragraph(parts[1], company_style))
-                    else:
-                        story.append(Paragraph(line, job_title_style))
-                    i += 1
-                    continue
-                
-            # Détecter les dates (format avec mois/année ou années)
-            if (re.match(r'^[A-Za-z]{3}\s+\d{4}', line) or 
-                re.match(r'^\d{4}', line) or 
-                re.match(r'^[A-Za-z]{3}\s+\d{4}\s*–', line)):
-                story.append(Paragraph(line, date_style))
-                i += 1
-                continue
-                
-            # Détecter les puces
-            if line.startswith('•') or line.startswith('-'):
-                # Nettoyer la puce et formater
-                clean_line = line[1:].strip()
-                story.append(Paragraph(f"• {clean_line}", bullet_style))
-                i += 1
-                continue
-                
-            # Texte normal
-            story.append(Paragraph(line, normal_style))
-            i += 1
-        
-        # Construire le PDF
-        doc.build(story)
-        
-        # Récupérer le contenu du PDF
-        pdf_content = buffer.getvalue()
-        buffer.close()
-        
-        return {
-            "success": True,
-            "pdf_content": pdf_content.hex(),  # Convertir en hex pour JSON
-            "filename": "cv_optimise.pdf"
-        }
-        
-    except Exception as e:
-        print(f"❌ Erreur génération PDF: {e}")
-        return {"success": False, "error": str(e)}
-
-@app.post("/extract-pdf")
-async def extract_pdf(cv_file: UploadFile = File(...)):
-    """Endpoint pour extraire le texte d'un PDF"""
-    try:
-        print(f"📄 Extraction PDF: {cv_file.filename}")
-        
-        # Lire le contenu du fichier
-        content = await cv_file.read()
-        
-        # Extraire le texte avec PyPDF2
-        try:
-            import PyPDF2
-            import io
-            
-            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
-            text = ""
-            
-            for page_num in range(len(pdf_reader.pages)):
-                page = pdf_reader.pages[page_num]
-                text += page.extract_text() + "\n"
-            
-            return {
-                "success": True,
-                "text": text.strip(),
-                "pages": len(pdf_reader.pages)
-            }
-            
-        except Exception as e:
-            print(f"❌ Erreur extraction PyPDF2: {e}")
-            return {
-                "success": False,
-                "error": f"Erreur extraction PDF: {str(e)}"
-            }
-            
-    except Exception as e:
-        print(f"❌ Erreur générale extraction: {e}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
-
-@app.get("/version")
-async def get_version():
-    return {"version": "2.5.0", "status": "PDF Extraction Added", "timestamp": "2025-01-05 23:20", "fix": "Added /extract-pdf endpoint", "action": "PDF_EXTRACTION_DEPLOY"}
-
-@app.get("/test-openai")
-async def test_openai():
-    """Test endpoint pour vérifier la configuration OpenAI - VERSION CORRIGÉE"""
-    try:
-        import openai
-        api_key = os.getenv("OPENAI_API_KEY")
-        
-        if not api_key:
-            return {"error": "Clé API OpenAI manquante", "has_key": False}
-        
-        # Test simple avec OpenAI (nouvelle API) - Configuration minimale SANS PROXIES
-        client = openai.OpenAI(
-            api_key=api_key,
-            timeout=30.0
-        )
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": "Test"}],
-            max_tokens=10
-        )
-        
-        return {
-            "success": True,
-            "has_key": True,
-            "key_preview": api_key[:10] + "...",
-            "test_response": response.choices[0].message.content
-        }
-    except Exception as e:
-        return {"error": str(e), "has_key": bool(os.getenv("OPENAI_API_KEY"))}
-
 if __name__ == "__main__":
     init_db()
     import uvicorn
-    port = int(os.getenv("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
