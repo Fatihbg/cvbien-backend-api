@@ -235,10 +235,13 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
         # Configuration Stripe
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
         if not stripe.api_key:
+            print("❌ STRIPE_SECRET_KEY manquante")
             raise HTTPException(status_code=500, detail="Configuration Stripe manquante")
         
+        print(f"✅ Stripe configuré avec clé: {stripe.api_key[:10]}...")
+        
         amount = request.get("amount", 1)  # En euros
-        credits = amount * 5  # 1€ = 5 crédits
+        credits = amount * 20  # 1€ = 20 crédits, 5€ = 100 crédits
         
         # Créer une session Stripe
         session = stripe.checkout.Session.create(
@@ -271,6 +274,41 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
     except Exception as e:
         print(f"❌ Erreur création paiement: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur paiement: {str(e)}")
+
+@app.post("/api/payments/test-payment")
+async def test_payment(request: dict, current_user: dict = Depends(verify_token)):
+    """Test de paiement sans Stripe (pour debug)"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        amount = request.get("amount", 1)  # En euros
+        credits = amount * 20  # 1€ = 20 crédits, 5€ = 100 crédits
+        
+        # Simuler un paiement réussi
+        uid = current_user['uid']
+        user_doc = db.collection('users').document(uid).get()
+        
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        user_data = user_doc.to_dict()
+        current_credits = user_data.get("credits", 0)
+        new_credits = current_credits + credits
+        
+        # Mettre à jour les crédits
+        db.collection('users').document(uid).update({"credits": new_credits})
+        
+        return {
+            "success": True,
+            "credits": new_credits,
+            "added": credits,
+            "message": f"Test: {credits} crédits ajoutés"
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur test paiement: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur test: {str(e)}")
 
 @app.post("/api/payments/confirm-payment")
 async def confirm_payment(request: dict):
