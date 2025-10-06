@@ -800,7 +800,7 @@ async def confirm_test_payment(session_id: str, user_id: str = "test_user", cred
             conn.close()
 
 @app.post("/api/test-payment-simple")
-async def test_payment_simple(credits: int = 5, amount: int = 1):
+async def test_payment_simple(credits: int = 5, amount: int = 1, user_id: str = Depends(verify_token)):
     """Test simple de création de session de paiement sans authentification"""
     try:
         print(f"🔧 DEBUG: Test simple - Credits: {credits}, Amount: {amount}")
@@ -820,9 +820,9 @@ async def test_payment_simple(credits: int = 5, amount: int = 1):
             'line_items[0][price_data][unit_amount]': amount * 100,
             'line_items[0][quantity]': 1,
             'mode': 'payment',
-            'success_url': 'https://cvbien4.vercel.app/?payment=success&session_id={CHECKOUT_SESSION_ID}',
+            'success_url': f'https://cvbien4.vercel.app/?payment=success&session_id={{CHECKOUT_SESSION_ID}}&credits={credits}&user_id={user_id}',
             'cancel_url': 'https://cvbien4.vercel.app/?payment=cancelled',
-            'metadata[user_id]': 'test_user',
+            'metadata[user_id]': user_id,
             'metadata[credits]': str(credits),
             'metadata[amount]': str(amount)
         }
