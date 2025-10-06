@@ -683,6 +683,64 @@ async def test_stripe():
             "api_key": f"{stripe.api_key[:10]}..." if stripe.api_key else "None"
         }
 
+@app.post("/api/test-payment-auth")
+async def test_payment_with_auth(credits: int = 5, amount: int = 1):
+    """Tester la création d'une session de paiement avec authentification simulée"""
+    try:
+        print("🔧 DEBUG: Test de création de session de paiement avec auth")
+        
+        # Simuler un user_id pour le test
+        user_id = "test_user_123"
+        
+        # Créer une session de checkout Stripe avec l'API REST
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {stripe.api_key}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        
+        data = {
+            'payment_method_types[]': 'card',
+            'line_items[0][price_data][currency]': 'eur',
+            'line_items[0][price_data][product_data][name]': f'{credits} crédits CVbien',
+            'line_items[0][price_data][unit_amount]': amount * 100,
+            'line_items[0][quantity]': 1,
+            'mode': 'payment',
+            'success_url': f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={credits}&user_id={user_id}',
+            'cancel_url': 'https://cvbien4.vercel.app/payment-cancel',
+            'metadata[user_id]': user_id,
+            'metadata[credits]': str(credits),
+            'metadata[amount]': str(amount)
+        }
+        
+        response = requests.post('https://api.stripe.com/v1/checkout/sessions', headers=headers, data=data)
+        
+        if response.status_code != 200:
+            raise Exception(f"Stripe API error: {response.status_code} - {response.text}")
+        
+        checkout_session_data = response.json()
+        
+        return {
+            "status": "success",
+            "message": "Session de paiement créée avec succès",
+            "session_id": checkout_session_data["id"],
+            "checkout_url": checkout_session_data["url"],
+            "client_secret": checkout_session_data.get('payment_intent', 'N/A'),
+            "amount": amount,
+            "credits": credits
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur test paiement: {str(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return {
+            "status": "error",
+            "message": f"Erreur: {str(e)}",
+            "traceback": traceback.format_exc()
+        }
+
 @app.post("/api/test-payment")
 async def test_payment():
     """Tester la création d'une session de paiement"""
