@@ -764,8 +764,8 @@ async def test_payment_simple(credits: int = 5, amount: int = 1):
             'line_items[0][price_data][unit_amount]': amount * 100,
             'line_items[0][quantity]': 1,
             'mode': 'payment',
-            'success_url': 'https://cvbien4.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url': 'https://cvbien4.vercel.app/payment-cancel',
+            'success_url': 'https://cvbien4.vercel.app/?payment=success&session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url': 'https://cvbien4.vercel.app/?payment=cancelled',
             'metadata[user_id]': 'test_user',
             'metadata[credits]': str(credits),
             'metadata[amount]': str(amount)
@@ -826,8 +826,8 @@ async def test_payment():
             'line_items[0][price_data][unit_amount]': test_data["amount"] * 100,
             'line_items[0][quantity]': 1,
             'mode': 'payment',
-            'success_url': 'https://cvbien4.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url': 'https://cvbien4.vercel.app/payment-cancel',
+            'success_url': 'https://cvbien4.vercel.app/?payment=success&session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url': 'https://cvbien4.vercel.app/?payment=cancelled',
             'metadata[user_id]': test_data["user_id"],
             'metadata[credits]': str(test_data["credits"]),
             'metadata[amount]': str(test_data["amount"])
