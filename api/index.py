@@ -125,19 +125,19 @@ if FIREBASE_AVAILABLE:
         db = None
 
 # Configuration OpenAI
+client = None
 if OPENAI_AVAILABLE:
     try:
-        # Configuration OpenAI moderne (v1.0+)
-        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        if os.getenv("OPENAI_API_KEY"):
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            # Configuration OpenAI moderne (v1.0+)
+            client = openai.OpenAI(api_key=api_key)
             print("✅ OpenAI configuré avec succès")
         else:
             print("❌ OPENAI_API_KEY manquante")
     except Exception as e:
         print(f"❌ Erreur configuration OpenAI: {e}")
         client = None
-else:
-    client = None
 
 # Security
 security = HTTPBearer()
