@@ -547,6 +547,8 @@ async def stripe_webhook(request: Request):
             print("⚠️ STRIPE_WEBHOOK_SECRET non configuré")
             return {"status": "error", "message": "Webhook secret non configuré"}
         
+        print(f"✅ STRIPE_WEBHOOK_SECRET trouvé: {webhook_secret[:10]}...")
+        
         stripe.api_key = stripe_secret_key
         
         # Vérifier la signature du webhook
