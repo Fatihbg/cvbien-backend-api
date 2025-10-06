@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uvicorn
@@ -525,6 +525,78 @@ async def confirm_payment_stripe(request: dict):
     except Exception as e:
         print(f"❌ Erreur confirmation paiement Stripe: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur confirmation: {str(e)}")
+
+@app.post("/api/payments/webhook")
+async def stripe_webhook(request: Request):
+    """Webhook Stripe pour créditer automatiquement les utilisateurs"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        import json
+        import stripe
+        
+        # Récupérer le body de la requête
+        body = await request.body()
+        sig_header = request.headers.get('stripe-signature')
+        
+        stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+        webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+        
+        if not webhook_secret:
+            print("⚠️ STRIPE_WEBHOOK_SECRET non configuré")
+            return {"status": "error", "message": "Webhook secret non configuré"}
+        
+        stripe.api_key = stripe_secret_key
+        
+        # Vérifier la signature du webhook
+        try:
+            event = stripe.Webhook.construct_event(
+                body, sig_header, webhook_secret
+            )
+        except ValueError as e:
+            print(f"❌ Erreur parsing webhook: {e}")
+            raise HTTPException(status_code=400, detail="Invalid payload")
+        except stripe.error.SignatureVerificationError as e:
+            print(f"❌ Erreur signature webhook: {e}")
+            raise HTTPException(status_code=400, detail="Invalid signature")
+        
+        # Traiter l'événement
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            metadata = session.get('metadata', {})
+            user_id = metadata.get('user_id')
+            credits = int(metadata.get('credits', 0))
+            
+            print(f"🎉 Paiement confirmé via webhook: user_id={user_id}, credits={credits}")
+            
+            if user_id and credits > 0:
+                # Récupérer l'utilisateur
+                user_doc = db.collection('users').document(user_id).get()
+                
+                if user_doc.exists:
+                    user_data = user_doc.to_dict()
+                    current_credits = user_data.get("credits", 0)
+                    new_credits = current_credits + credits
+                    
+                    # Mettre à jour les crédits
+                    db.collection('users').document(user_id).update({"credits": new_credits})
+                    
+                    print(f"✅ Webhook: {credits} crédits ajoutés à {user_id}, total: {new_credits}")
+                    
+                    return {"status": "success", "credits_added": credits, "total_credits": new_credits}
+                else:
+                    print(f"❌ Utilisateur {user_id} non trouvé dans Firestore")
+                    return {"status": "error", "message": "Utilisateur non trouvé"}
+            else:
+                print(f"❌ Métadonnées manquantes: user_id={user_id}, credits={credits}")
+                return {"status": "error", "message": "Métadonnées manquantes"}
+        
+        return {"status": "success", "message": "Webhook reçu"}
+        
+    except Exception as e:
+        print(f"❌ Erreur webhook: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur webhook: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
