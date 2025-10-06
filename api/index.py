@@ -7,6 +7,8 @@ import json
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
+import base64
+import io
 
 # Firebase imports
 try:
@@ -35,6 +37,15 @@ except ImportError:
     OPENAI_AVAILABLE = False
     print("⚠️ OpenAI non installé")
 
+# PDF import
+try:
+    import PyPDF2
+    PDF_AVAILABLE = True
+    print("✅ PyPDF2 importé avec succès")
+except ImportError:
+    PDF_AVAILABLE = False
+    print("⚠️ PyPDF2 non installé")
+
 # Modèles de données
 class CVGenerationRequest(BaseModel):
     cv_content: str
@@ -44,6 +55,14 @@ class CVGenerationRequest(BaseModel):
 class CVGenerationResponse(BaseModel):
     optimized_cv: str
     ats_score: int
+    success: bool
+    message: str
+
+class PDFExtractionRequest(BaseModel):
+    pdf_base64: str
+
+class PDFExtractionResponse(BaseModel):
+    text: str
     success: bool
     message: str
 
@@ -660,6 +679,45 @@ async def stripe_webhook(request: Request):
         print(f"❌ Erreur webhook: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur webhook: {str(e)}")
 
+@app.post("/extract-pdf", response_model=PDFExtractionResponse)
+async def extract_pdf(request: PDFExtractionRequest):
+    """Extraire le texte d'un PDF"""
+    if not PDF_AVAILABLE:
+        raise HTTPException(status_code=503, detail="PyPDF2 non disponible")
+    
+    try:
+        # Décoder le PDF base64
+        pdf_data = base64.b64decode(request.pdf_base64)
+        
+        # Créer un objet PDF
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_data))
+        
+        # Extraire le texte de toutes les pages
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        
+        if not text.strip():
+            return PDFExtractionResponse(
+                text="",
+                success=False,
+                message="Aucun texte trouvé dans le PDF"
+            )
+        
+        return PDFExtractionResponse(
+            text=text.strip(),
+            success=True,
+            message="Texte extrait avec succès"
+        )
+        
+    except Exception as e:
+        print(f"❌ Erreur extraction PDF: {e}")
+        return PDFExtractionResponse(
+            text="",
+            success=False,
+            message=f"Erreur extraction PDF: {str(e)}"
+        )
+
 @app.post("/optimize-cv", response_model=CVGenerationResponse)
 async def optimize_cv(request: CVGenerationRequest):
     """Optimiser un CV avec OpenAI"""
@@ -669,21 +727,41 @@ async def optimize_cv(request: CVGenerationRequest):
     try:
         print("🤖 Génération CV avec OpenAI...")
         
-        # Appel à OpenAI
+        # Appel à OpenAI avec prompt Mimi Prime
         response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {
                     "role": "system",
-                    "content": "Tu es un expert en recrutement et optimisation de CV. Tu dois optimiser le CV fourni pour qu'il corresponde parfaitement à la description de poste. Améliore le contenu, ajoute des mots-clés pertinents, et structure le CV de manière professionnelle. Retourne uniquement le CV optimisé en texte brut, sans explications."
+                    "content": """Tu es Mimi Prime, une experte en recrutement de niveau international avec 15 ans d'expérience. Tu optimises les CV pour qu'ils passent les systèmes ATS et impressionnent les recruteurs.
+
+RÈGLES STRICTES :
+1. Analyse le CV original et la description de poste
+2. Optimise le contenu avec des mots-clés pertinents
+3. Structure professionnelle et moderne
+4. Ajoute des métriques et résultats quantifiés
+5. Adapte l'expérience au poste visé
+6. Retourne UNIQUEMENT le CV optimisé en texte brut, sans explications
+
+STYLE MIMI PRIME :
+- Descriptions enrichies avec chiffres et pourcentages
+- Mots-clés techniques du secteur
+- Formulations impactantes et professionnelles
+- Structure claire et lisible"""
                 },
                 {
                     "role": "user",
-                    "content": f"Voici le CV à optimiser:\n\n{request.cv_content}\n\nEt voici la description de poste:\n\n{request.job_description}\n\nOptimise ce CV pour ce poste."
+                    "content": f"""CV ORIGINAL :
+{request.cv_content}
+
+DESCRIPTION DU POSTE :
+{request.job_description}
+
+Mimi, optimise ce CV pour qu'il corresponde parfaitement à ce poste. Utilise ton expertise pour le rendre exceptionnel."""
                 }
             ],
-            max_tokens=3000,
-            temperature=0.7
+            max_tokens=4000,
+            temperature=0.6
         )
         
         content = response.choices[0].message.content
