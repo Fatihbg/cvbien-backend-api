@@ -241,7 +241,12 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
         print(f"✅ Stripe configuré avec clé: {stripe.api_key[:10]}...")
         
         amount = request.get("amount", 1)  # En euros
-        credits = amount * 20  # 1€ = 20 crédits, 5€ = 100 crédits
+        if amount == 1:
+            credits = 5  # 1€ = 5 crédits
+        elif amount == 5:
+            credits = 100  # 5€ = 100 crédits
+        else:
+            credits = amount * 5  # Par défaut
         
         # Créer une session Stripe
         session = stripe.checkout.Session.create(
@@ -283,7 +288,12 @@ async def test_payment(request: dict, current_user: dict = Depends(verify_token)
     
     try:
         amount = request.get("amount", 1)  # En euros
-        credits = amount * 20  # 1€ = 20 crédits, 5€ = 100 crédits
+        if amount == 1:
+            credits = 5  # 1€ = 5 crédits
+        elif amount == 5:
+            credits = 100  # 5€ = 100 crédits
+        else:
+            credits = amount * 5  # Par défaut
         
         # Simuler un paiement réussi
         uid = current_user['uid']
