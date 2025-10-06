@@ -526,37 +526,46 @@ async def create_payment_intent(
         if not stripe.api_key or not stripe.api_key.startswith("sk_"):
             raise HTTPException(status_code=400, detail="Configuration Stripe invalide. Veuillez configurer STRIPE_SECRET_KEY.")
         
-        # Créer une session de checkout Stripe
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {
-                        'name': f'{payment_data.credits} crédits CVbien',
+        try:
+            # Créer une session de checkout Stripe
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'eur',
+                        'product_data': {
+                            'name': f'{payment_data.credits} crédits CVbien',
+                        },
+                        'unit_amount': payment_data.amount * 100,  # Montant en centimes
                     },
-                    'unit_amount': payment_data.amount * 100,  # Montant en centimes
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={payment_data.credits}&user_id={user_id}',
-            cancel_url='https://cvbien4.vercel.app/payment-cancel',
-            metadata={
-                'user_id': user_id,
-                'credits': str(payment_data.credits),
-                'amount': str(payment_data.amount)
-            }
-        )
-        
-        print(f"✅ DEBUG: Session Stripe créée: {checkout_session.id}")
-        
-        response = PaymentIntentResponse(
-            client_secret=checkout_session.payment_intent,
-            amount=payment_data.amount,
-            credits=payment_data.credits,
-            checkout_url=checkout_session.url
-        )
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={payment_data.credits}&user_id={user_id}',
+                cancel_url='https://cvbien4.vercel.app/payment-cancel',
+                metadata={
+                    'user_id': user_id,
+                    'credits': str(payment_data.credits),
+                    'amount': str(payment_data.amount)
+                }
+            )
+            
+            print(f"✅ DEBUG: Session Stripe créée: {checkout_session.id}")
+            
+            response = PaymentIntentResponse(
+                client_secret=checkout_session.payment_intent,
+                amount=payment_data.amount,
+                credits=payment_data.credits,
+                checkout_url=checkout_session.url
+            )
+            
+        except stripe.error.StripeError as e:
+            print(f"❌ Erreur Stripe: {str(e)}")
+            print(f"❌ Type d'erreur: {type(e)}")
+            raise HTTPException(status_code=400, detail=f"Erreur Stripe: {str(e)}")
+        except Exception as e:
+            print(f"❌ Erreur générale: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
         
         print(f"✅ DEBUG: Réponse générée: {response}")
         return response
@@ -632,18 +641,22 @@ async def test_stripe():
         
         # Tester une requête simple à Stripe
         try:
-            account = stripe.Account.retrieve()
+            # Test simple avec la version de Stripe
+            stripe_version = stripe.__version__
+            print(f"🔧 DEBUG: Stripe version: {stripe_version}")
+            
+            # Test de base sans récupérer l'account
             return {
                 "status": "success",
                 "message": "Stripe configuration OK",
                 "api_key": f"{stripe.api_key[:10]}...",
                 "mode": "live" if stripe.api_key.startswith("sk_live_") else "test",
-                "account_id": account.id
+                "stripe_version": stripe_version
             }
-        except stripe.error.AuthenticationError:
+        except stripe.error.AuthenticationError as e:
             return {
                 "status": "error",
-                "message": "Invalid Stripe API key",
+                "message": f"Invalid Stripe API key: {str(e)}",
                 "api_key": f"{stripe.api_key[:10]}..."
             }
     except Exception as e:
