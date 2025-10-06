@@ -913,6 +913,54 @@ async def test_payment():
             "traceback": traceback.format_exc()
         }
 
+@app.get("/api/backup/users")
+async def backup_users():
+    """Sauvegarder tous les utilisateurs avant migration PostgreSQL"""
+    try:
+        conn = sqlite3.connect('cvbien.db')
+        cursor = conn.cursor()
+        
+        # Récupérer tous les utilisateurs
+        cursor.execute("SELECT * FROM users")
+        users = cursor.fetchall()
+        
+        # Récupérer toutes les transactions
+        cursor.execute("SELECT * FROM transactions")
+        transactions = cursor.fetchall()
+        
+        conn.close()
+        
+        return {
+            "status": "success",
+            "users": [
+                {
+                    "id": user[0],
+                    "email": user[1],
+                    "name": user[2],
+                    "password_hash": user[3],
+                    "credits": user[4],
+                    "created_at": user[5],
+                    "last_login_at": user[6],
+                    "subscription_type": user[7],
+                    "is_active": user[8]
+                } for user in users
+            ],
+            "transactions": [
+                {
+                    "id": trans[0],
+                    "user_id": trans[1],
+                    "amount": trans[2],
+                    "credits_added": trans[3],
+                    "created_at": trans[4],
+                    "type": trans[5]
+                } for trans in transactions
+            ],
+            "total_users": len(users),
+            "total_transactions": len(transactions)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/version")
 async def get_version():
     return {

@@ -9,5 +9,8 @@
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
-  }
+  },
+  "forceDeploy": true,
+  "testPersistence": "2025-01-05-23:50",
+  "forceRedeploy": "2025-01-05-23:55"
 }
