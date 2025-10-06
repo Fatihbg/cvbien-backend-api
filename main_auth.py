@@ -22,7 +22,10 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement depuis .env
 load_dotenv()
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_votre_cle_secrete_ici")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+if not stripe.api_key:
+    print("⚠️ WARNING: STRIPE_SECRET_KEY not configured - using test mode")
+    stripe.api_key = "sk_test_51234567890abcdef"  # Clé de test factice
 
 # Modèles Pydantic
 class UserCreate(BaseModel):
@@ -513,6 +516,9 @@ async def create_payment_intent(
         
         # Créer une vraie session de paiement Stripe
         try:
+            print(f"🔧 DEBUG: Configuration Stripe - API Key: {stripe.api_key[:10]}...")
+            print(f"🔧 DEBUG: Création session pour {payment_data.credits} crédits à {payment_data.amount}€")
+            
             # Créer une session de checkout Stripe
             checkout_session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
@@ -547,7 +553,16 @@ async def create_payment_intent(
             
         except stripe.error.StripeError as e:
             print(f"❌ Erreur Stripe: {str(e)}")
-            raise HTTPException(status_code=400, detail=f"Erreur de paiement: {str(e)}")
+            print(f"❌ Type d'erreur Stripe: {type(e)}")
+            print(f"❌ Code d'erreur: {getattr(e, 'code', 'N/A')}")
+            print(f"❌ Paramètre: {getattr(e, 'param', 'N/A')}")
+            raise HTTPException(status_code=400, detail=f"Erreur de paiement Stripe: {str(e)}")
+        except Exception as e:
+            print(f"❌ Erreur générale: {str(e)}")
+            print(f"❌ Type d'erreur: {type(e)}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
         
         print(f"✅ DEBUG: Réponse générée: {response}")
         return response
