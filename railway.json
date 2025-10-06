@@ -11,6 +11,8 @@
     "restartPolicyMaxRetries": 10
   },
   "forceDeploy": true,
-  "firebaseMigration": "2025-01-05-23:58",
+  "testPersistence": "2025-01-05-23:50",
+  "forceRedeploy": "2025-01-05-23:55",
+  "emergencyRedeploy": "2025-01-05-23:58",
   "useFirebase": true
 }
