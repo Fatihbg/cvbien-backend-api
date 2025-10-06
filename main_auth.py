@@ -527,36 +527,42 @@ async def create_payment_intent(
             raise HTTPException(status_code=400, detail="Configuration Stripe invalide. Veuillez configurer STRIPE_SECRET_KEY.")
         
         try:
-            # Créer une session de checkout Stripe
-            checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'eur',
-                        'product_data': {
-                            'name': f'{payment_data.credits} crédits CVbien',
-                        },
-                        'unit_amount': payment_data.amount * 100,  # Montant en centimes
-                    },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={payment_data.credits}&user_id={user_id}',
-                cancel_url='https://cvbien4.vercel.app/payment-cancel',
-                metadata={
-                    'user_id': user_id,
-                    'credits': str(payment_data.credits),
-                    'amount': str(payment_data.amount)
-                }
-            )
+            # Créer une session de checkout Stripe avec l'API REST
+            import requests
             
-            print(f"✅ DEBUG: Session Stripe créée: {checkout_session.id}")
+            headers = {
+                'Authorization': f'Bearer {stripe.api_key}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+            
+            data = {
+                'payment_method_types[]': 'card',
+                'line_items[0][price_data][currency]': 'eur',
+                'line_items[0][price_data][product_data][name]': f'{payment_data.credits} crédits CVbien',
+                'line_items[0][price_data][unit_amount]': payment_data.amount * 100,
+                'line_items[0][quantity]': 1,
+                'mode': 'payment',
+                'success_url': f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={payment_data.credits}&user_id={user_id}',
+                'cancel_url': 'https://cvbien4.vercel.app/payment-cancel',
+                'metadata[user_id]': user_id,
+                'metadata[credits]': str(payment_data.credits),
+                'metadata[amount]': str(payment_data.amount)
+            }
+            
+            response = requests.post('https://api.stripe.com/v1/checkout/sessions', headers=headers, data=data)
+            
+            if response.status_code != 200:
+                raise Exception(f"Stripe API error: {response.status_code} - {response.text}")
+            
+            checkout_session_data = response.json()
+            
+            print(f"✅ DEBUG: Session Stripe créée: {checkout_session_data['id']}")
             
             response = PaymentIntentResponse(
-                client_secret=checkout_session.payment_intent,
+                client_secret=checkout_session_data.get('payment_intent', 'N/A'),
                 amount=payment_data.amount,
                 credits=payment_data.credits,
-                checkout_url=checkout_session.url
+                checkout_url=checkout_session_data['url']
             )
             
         except stripe.error.StripeError as e:
@@ -581,16 +587,27 @@ async def create_payment_intent(
 async def confirm_payment(session_id: str):
     """Confirmer un paiement Stripe et ajouter les crédits"""
     try:
-        # Récupérer la session Stripe
-        session = stripe.checkout.Session.retrieve(session_id)
+        # Récupérer la session Stripe avec l'API REST
+        import requests
         
-        if session.payment_status != 'paid':
+        headers = {
+            'Authorization': f'Bearer {stripe.api_key}',
+        }
+        
+        response = requests.get(f'https://api.stripe.com/v1/checkout/sessions/{session_id}', headers=headers)
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail=f"Erreur récupération session: {response.status_code}")
+        
+        session_data = response.json()
+        
+        if session_data['payment_status'] != 'paid':
             raise HTTPException(status_code=400, detail="Paiement non confirmé")
         
         # Récupérer les métadonnées
-        user_id = session.metadata.get('user_id')
-        credits = int(session.metadata.get('credits', 0))
-        amount = float(session.metadata.get('amount', 0))
+        user_id = session_data['metadata'].get('user_id')
+        credits = int(session_data['metadata'].get('credits', 0))
+        amount = float(session_data['metadata'].get('amount', 0))
         
         if not user_id or not credits:
             raise HTTPException(status_code=400, detail="Métadonnées de session invalides")
