@@ -923,6 +923,36 @@ async def get_version():
         "action": "PAYMENT_TEST_DEPLOY"
     }
 
+@app.post("/api/test-create-user")
+async def test_create_user(email: str = "test@example.com", name: str = "Test User"):
+    """Tester la création d'un utilisateur"""
+    try:
+        conn = sqlite3.connect('cvbien.db')
+        cursor = conn.cursor()
+        
+        # Créer un utilisateur de test
+        user_id = str(uuid.uuid4())
+        password_hash = "test_hash"
+        created_at = datetime.utcnow().isoformat()
+        
+        cursor.execute("""
+            INSERT INTO users (id, email, name, password_hash, credits, created_at, subscription_type, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, email, name, password_hash, 2, created_at, 'free', 1))
+        
+        conn.commit()
+        conn.close()
+        
+        return {
+            "status": "success",
+            "message": f"Utilisateur {email} créé avec succès",
+            "user_id": user_id,
+            "email": email
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur: {str(e)}"}
+
 @app.post("/api/admin/add-credits")
 async def add_credits_to_user(email: str, credits: int):
     """Ajouter des crédits à un utilisateur par email"""
