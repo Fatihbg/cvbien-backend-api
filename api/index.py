@@ -127,13 +127,17 @@ if FIREBASE_AVAILABLE:
 # Configuration OpenAI
 if OPENAI_AVAILABLE:
     try:
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        if openai.api_key:
+        # Configuration OpenAI moderne (v1.0+)
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        if os.getenv("OPENAI_API_KEY"):
             print("✅ OpenAI configuré avec succès")
         else:
             print("❌ OPENAI_API_KEY manquante")
     except Exception as e:
         print(f"❌ Erreur configuration OpenAI: {e}")
+        client = None
+else:
+    client = None
 
 # Security
 security = HTTPBearer()
@@ -175,12 +179,12 @@ def test_openai():
     if not OPENAI_AVAILABLE:
         return {"success": False, "message": "OpenAI SDK non installé"}
     
-    if not os.getenv("OPENAI_API_KEY"):
-        return {"success": False, "message": "OPENAI_API_KEY manquante"}
+    if not client:
+        return {"success": False, "message": "Client OpenAI non initialisé"}
     
     try:
         # Test simple avec OpenAI
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "Test"}],
             max_tokens=10
@@ -721,14 +725,14 @@ async def extract_pdf(request: PDFExtractionRequest):
 @app.post("/optimize-cv", response_model=CVGenerationResponse)
 async def optimize_cv(request: CVGenerationRequest):
     """Optimiser un CV avec OpenAI"""
-    if not OPENAI_AVAILABLE:
+    if not OPENAI_AVAILABLE or not client:
         raise HTTPException(status_code=503, detail="OpenAI non disponible")
     
     try:
         print("🤖 Génération CV avec OpenAI...")
         
         # Appel à OpenAI avec prompt Mimi Prime
-        response = openai.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {
