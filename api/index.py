@@ -109,6 +109,26 @@ def version():
 def health():
     return {"status": "healthy", "message": "API is running"}
 
+@app.get("/api/test-stripe")
+def test_stripe():
+    """Test de configuration Stripe"""
+    try:
+        import stripe
+        stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+        
+        if not stripe_secret_key:
+            return {"status": "error", "message": "STRIPE_SECRET_KEY manquante"}
+        
+        stripe.api_key = stripe_secret_key
+        return {
+            "status": "success", 
+            "message": "Stripe configuré",
+            "key_preview": stripe_secret_key[:10] + "...",
+            "stripe_version": stripe.__version__
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur Stripe: {str(e)}"}
+
 @app.post("/api/auth/validate-firebase")
 async def validate_firebase_token(token_data: dict):
     """Valider un token Firebase et retourner les infos utilisateur"""
@@ -233,12 +253,14 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
         import stripe
         
         # Configuration Stripe
-        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-        if not stripe.api_key:
+        stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+        if not stripe_secret_key:
             print("❌ STRIPE_SECRET_KEY manquante")
             raise HTTPException(status_code=500, detail="Configuration Stripe manquante")
         
-        print(f"✅ Stripe configuré avec clé: {stripe.api_key[:10]}...")
+        # Initialiser Stripe avec la clé
+        stripe.api_key = stripe_secret_key
+        print(f"✅ Stripe configuré avec clé: {stripe_secret_key[:10]}...")
         
         amount = request.get("amount", 1)  # En euros
         if amount == 1:
