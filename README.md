@@ -20,3 +20,4 @@ Ce backend est déployé sur Railway.
 - Uvicorn
 - SQLite
 - JWT Authentication
+# Force backend deploy Tue Oct  7 01:55:01 CEST 2025
