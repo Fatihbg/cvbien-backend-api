@@ -623,14 +623,43 @@ async def confirm_payment(session_id: str):
         print(f"❌ Erreur confirmation: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
 
+@app.get("/api/test-stripe")
+async def test_stripe():
+    """Tester la configuration Stripe"""
+    try:
+        # Tester la configuration Stripe
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+        if not stripe.api_key:
+            return {
+                "status": "error",
+                "message": "STRIPE_SECRET_KEY not configured",
+                "api_key": "None"
+            }
+        
+        # Tester une requête simple à Stripe
+        stripe.Account.retrieve()
+        
+        return {
+            "status": "success",
+            "message": "Stripe configuration OK",
+            "api_key": f"{stripe.api_key[:10]}...",
+            "mode": "live" if stripe.api_key.startswith("sk_live_") else "test"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Stripe error: {str(e)}",
+            "api_key": f"{stripe.api_key[:10]}..." if stripe.api_key else "None"
+        }
+
 @app.get("/version")
 async def get_version():
     return {
-        "version": "2.7.0",
-        "status": "Real Stripe Payment Implemented",
-        "timestamp": "2025-01-05 23:30",
-        "fix": "Implemented real Stripe payment system with checkout sessions",
-        "action": "STRIPE_PAYMENT_DEPLOY"
+        "version": "2.8.0",
+        "status": "Stripe Debug Added",
+        "timestamp": "2025-01-05 23:35",
+        "fix": "Added detailed debugging and Stripe test endpoint",
+        "action": "STRIPE_DEBUG_DEPLOY"
     }
 
 @app.get("/api/admin/users")
