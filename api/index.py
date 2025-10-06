@@ -280,27 +280,37 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
         else:
             credits = amount * 5  # Par défaut
         
-        # Créer une session Stripe
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {
-                        'name': f'{credits} crédits CV Bien',
-                    },
-                    'unit_amount': amount * 100,  # En centimes
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url=f'https://cvbien4.vercel.app/?payment=success&credits={credits}&user_id={current_user["uid"]}',
-            cancel_url='https://cvbien4.vercel.app/?payment=cancel',
-            metadata={
-                'user_id': current_user['uid'],
-                'credits': str(credits)
-            }
-        )
+        # Créer une session Stripe via API REST
+        print("🔧 Création session Stripe via API REST...")
+        
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {stripe_secret_key}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        
+        data = {
+            'payment_method_types[]': 'card',
+            'line_items[0][price_data][currency]': 'eur',
+            'line_items[0][price_data][product_data][name]': f'{credits} crédits CV Bien',
+            'line_items[0][price_data][unit_amount]': str(amount * 100),
+            'line_items[0][quantity]': '1',
+            'mode': 'payment',
+            'success_url': f'https://cvbien4.vercel.app/?payment=success&credits={credits}&user_id={current_user["uid"]}',
+            'cancel_url': 'https://cvbien4.vercel.app/?payment=cancel',
+            'metadata[user_id]': current_user['uid'],
+            'metadata[credits]': str(credits)
+        }
+        
+        response = requests.post('https://api.stripe.com/v1/checkout/sessions', headers=headers, data=data)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur Stripe API: {response.status_code} - {response.text}")
+            raise HTTPException(status_code=500, detail=f"Erreur Stripe API: {response.text}")
+        
+        session = response.json()
+        print(f"✅ Session créée: {session.get('id')}")
         
         return {
             "success": True,
