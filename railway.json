@@ -1,8 +1,13 @@
 {
+  "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "dockerfile"
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "restartPolicyType": "always"
+    "startCommand": "python main_postgres.py",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
 }
