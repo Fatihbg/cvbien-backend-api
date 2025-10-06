@@ -190,24 +190,36 @@ def test_openai():
         return {"success": False, "message": "OpenAI SDK non installé", "debug": debug_info}
     
     try:
-        # Test simple avec OpenAI (nouvelle API)
+        # Test simple avec OpenAI (API REST)
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             return {"success": False, "message": "OPENAI_API_KEY manquante", "debug": debug_info}
         
-        client = openai.OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": "Test"}],
-            max_tokens=10
-        )
+        import requests
         
-        return {
-            "success": True, 
-            "message": "OpenAI fonctionne",
-            "model": "gpt-4o-mini",
-            "debug": debug_info
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
         }
+        
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [{"role": "user", "content": "Test"}],
+            "max_tokens": 10
+        }
+        
+        response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
+        
+        if response.status_code == 200:
+            return {
+                "success": True, 
+                "message": "OpenAI fonctionne",
+                "model": "gpt-4o-mini",
+                "debug": debug_info
+            }
+        else:
+            return {"success": False, "message": f"OpenAI API error: {response.status_code}", "debug": debug_info}
+            
     except Exception as e:
         return {"success": False, "message": f"Erreur OpenAI: {str(e)}", "debug": debug_info}
 
@@ -750,13 +762,17 @@ async def optimize_cv(request: CVGenerationRequest):
         if not api_key:
             raise HTTPException(status_code=503, detail="OPENAI_API_KEY manquante")
         
-        # Utiliser la nouvelle API OpenAI
-        client = openai.OpenAI(api_key=api_key)
+        # Utiliser l'API REST OpenAI directement
+        import requests
         
-        # Appel à OpenAI avec prompt Mimi Prime (nouvelle API)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
                 {
                     "role": "system",
                     "content": """Tu es Mimi Prime, une experte en recrutement de niveau international avec 15 ans d'expérience. Tu optimises les CV pour qu'ils passent les systèmes ATS et impressionnent les recruteurs.
@@ -786,11 +802,18 @@ DESCRIPTION DU POSTE :
 Mimi, optimise ce CV pour qu'il corresponde parfaitement à ce poste. Utilise ton expertise pour le rendre exceptionnel."""
                 }
             ],
-            max_tokens=4000,
-            temperature=0.6
-        )
+            "max_tokens": 4000,
+            "temperature": 0.6
+        }
         
-        content = response.choices[0].message.content
+        response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
+        
+        if response.status_code != 200:
+            raise Exception(f"OpenAI API error: {response.status_code} - {response.text}")
+        
+        response_data = response.json()
+        
+        content = response_data['choices'][0]['message']['content']
         
         # Calculer un score ATS simulé (basé sur la longueur et les mots-clés)
         ats_score = min(95, max(60, len(content) // 50 + 30))
