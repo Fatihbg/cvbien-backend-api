@@ -194,12 +194,12 @@ def test_openai():
         return {"success": False, "message": "Client OpenAI non initialisé", "debug": debug_info}
     
     try:
-        # Test simple avec OpenAI (API ancienne)
+        # Test simple avec OpenAI (nouvelle API)
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key:
-            openai.api_key = api_key
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+            client = openai.OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": "Test"}],
                 max_tokens=10
             )
@@ -208,7 +208,7 @@ def test_openai():
         return {
             "success": True, 
             "message": "OpenAI fonctionne",
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o-mini",
             "debug": debug_info
         }
     except Exception as e:
@@ -753,11 +753,16 @@ async def optimize_cv(request: CVGenerationRequest):
         if not api_key:
             raise HTTPException(status_code=503, detail="OPENAI_API_KEY manquante")
         
-        # Utiliser l'ancienne API pour éviter les conflits
-        openai.api_key = api_key
+        # Utiliser la nouvelle API OpenAI
+        client = openai.OpenAI(api_key=api_key)
         
-        # Appel à OpenAI avec prompt Mimi Prime (API ancienne)
-        prompt = f"""Tu es Mimi Prime, une experte en recrutement de niveau international avec 15 ans d'expérience. Tu optimises les CV pour qu'ils passent les systèmes ATS et impressionnent les recruteurs.
+        # Appel à OpenAI avec prompt Mimi Prime (nouvelle API)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """Tu es Mimi Prime, une experte en recrutement de niveau international avec 15 ans d'expérience. Tu optimises les CV pour qu'ils passent les systèmes ATS et impressionnent les recruteurs.
 
 RÈGLES STRICTES :
 1. Analyse le CV original et la description de poste
@@ -771,21 +776,18 @@ STYLE MIMI PRIME :
 - Descriptions enrichies avec chiffres et pourcentages
 - Mots-clés techniques du secteur
 - Formulations impactantes et professionnelles
-- Structure claire et lisible
-
-CV ORIGINAL :
+- Structure claire et lisible"""
+                },
+                {
+                    "role": "user",
+                    "content": f"""CV ORIGINAL :
 {request.cv_content}
 
 DESCRIPTION DU POSTE :
 {request.job_description}
 
 Mimi, optimise ce CV pour qu'il corresponde parfaitement à ce poste. Utilise ton expertise pour le rendre exceptionnel."""
-
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Tu es Mimi Prime, experte en recrutement."},
-                {"role": "user", "content": prompt}
+                }
             ],
             max_tokens=4000,
             temperature=0.6
