@@ -923,6 +923,46 @@ async def get_version():
         "action": "PAYMENT_TEST_DEPLOY"
     }
 
+@app.post("/api/test-register")
+async def test_register(email: str = "test_register@example.com", name: str = "Test Register", password: str = "test123"):
+    """Tester l'inscription complète comme le frontend"""
+    try:
+        conn = sqlite3.connect('cvbien.db')
+        cursor = conn.cursor()
+        
+        # Vérifier si l'utilisateur existe déjà
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        if cursor.fetchone():
+            conn.close()
+            return {"status": "error", "message": "Email déjà utilisé"}
+        
+        # Créer l'utilisateur
+        user_id = str(uuid.uuid4())
+        password_hash = hash_password(password)
+        created_at = datetime.utcnow().isoformat()
+        
+        cursor.execute('''
+            INSERT INTO users (id, email, name, password_hash, credits, created_at, subscription_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, email, name, password_hash, 2, created_at, 'free'))
+        
+        conn.commit()
+        conn.close()
+        
+        # Créer le token
+        access_token = create_access_token(data={"sub": user_id})
+        
+        return {
+            "status": "success",
+            "message": f"Utilisateur {email} créé avec succès",
+            "user_id": user_id,
+            "email": email,
+            "access_token": access_token
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur: {str(e)}"}
+
 @app.post("/api/test-create-user")
 async def test_create_user(email: str = "test@example.com", name: str = "Test User"):
     """Tester la création d'un utilisateur"""
