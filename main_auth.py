@@ -637,14 +637,21 @@ async def test_stripe():
             }
         
         # Tester une requête simple à Stripe
-        stripe.Account.retrieve()
-        
-        return {
-            "status": "success",
-            "message": "Stripe configuration OK",
-            "api_key": f"{stripe.api_key[:10]}...",
-            "mode": "live" if stripe.api_key.startswith("sk_live_") else "test"
-        }
+        try:
+            account = stripe.Account.retrieve()
+            return {
+                "status": "success",
+                "message": "Stripe configuration OK",
+                "api_key": f"{stripe.api_key[:10]}...",
+                "mode": "live" if stripe.api_key.startswith("sk_live_") else "test",
+                "account_id": account.id
+            }
+        except stripe.error.AuthenticationError:
+            return {
+                "status": "error",
+                "message": "Invalid Stripe API key",
+                "api_key": f"{stripe.api_key[:10]}..."
+            }
     except Exception as e:
         return {
             "status": "error",
