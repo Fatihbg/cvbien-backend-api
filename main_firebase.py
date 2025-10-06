@@ -133,7 +133,7 @@ async def root():
 @app.get("/version")
 async def get_version():
     return {
-        "version": "4.0.0",
+        "version": "4.1.0",
         "status": "Firebase Migration Complete",
         "timestamp": "2025-01-05-23:58",
         "fix": "Migrated to Firebase for reliable data persistence",
