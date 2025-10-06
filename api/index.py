@@ -311,11 +311,17 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
         
         session = response.json()
         print(f"✅ Session créée: {session.get('id')}")
+        print(f"🔍 Session complète: {session}")
+        
+        # Vérifier que l'URL existe
+        if 'url' not in session:
+            print(f"❌ Pas d'URL dans la session: {session}")
+            raise HTTPException(status_code=500, detail="URL de checkout non trouvée dans la réponse Stripe")
         
         return {
             "success": True,
-            "checkout_url": session.url,
-            "session_id": session.id
+            "checkout_url": session['url'],
+            "session_id": session['id']
         }
         
     except Exception as e:
