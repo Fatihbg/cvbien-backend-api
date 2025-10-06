@@ -10,7 +10,6 @@ import os
 from datetime import datetime, timedelta
 import uuid
 import stripe
-from stripe import checkout
 
 # Configuration
 SECRET_KEY = "your-secret-key-change-in-production"
@@ -529,7 +528,7 @@ async def create_payment_intent(
         
         try:
             # Créer une session de checkout Stripe
-            checkout_session = checkout.Session.create(
+            checkout_session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
                 line_items=[{
                     'price_data': {
@@ -583,7 +582,7 @@ async def confirm_payment(session_id: str):
     """Confirmer un paiement Stripe et ajouter les crédits"""
     try:
         # Récupérer la session Stripe
-        session = checkout.Session.retrieve(session_id)
+        session = stripe.checkout.Session.retrieve(session_id)
         
         if session.payment_status != 'paid':
             raise HTTPException(status_code=400, detail="Paiement non confirmé")
@@ -681,7 +680,11 @@ async def test_payment():
         }
         
         # Créer une session de checkout Stripe
-        checkout_session = checkout.Session.create(
+        print(f"🔧 DEBUG: Stripe module: {stripe}")
+        print(f"🔧 DEBUG: Stripe checkout: {getattr(stripe, 'checkout', 'NOT_FOUND')}")
+        
+        # Utiliser l'API Stripe directement
+        checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
                 'price_data': {
