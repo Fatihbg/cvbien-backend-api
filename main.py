@@ -1,33 +1,24 @@
-#!/usr/bin/env python3
-"""
-Point d'entrée principal pour Railway
-Utilise main_auth.py qui fonctionne
-"""
-import subprocess
-import sys
-import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
-def main():
-    print("🚀 Starting CVbien Backend...")
-    print(f"Python version: {sys.version}")
-    print(f"Working directory: {os.getcwd()}")
-    
-    # Vérifier que main_auth.py existe
-    if not os.path.exists('main_auth.py'):
-        print("❌ ERROR: main_auth.py not found!")
-        sys.exit(1)
-    
-    print("✅ main_auth.py found, starting...")
-    
-    # Lancer main_auth.py
-    try:
-        subprocess.run([sys.executable, 'main_auth.py'], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Error running main_auth.py: {e}")
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print("🛑 Shutting down...")
-        sys.exit(0)
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World", "version": "6.0.0"}
+
+@app.get("/version")
+def version():
+    return {"version": "6.0.0", "status": "working"}
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(app, host="0.0.0.0", port=8080)
