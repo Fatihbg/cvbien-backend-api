@@ -510,6 +510,7 @@ async def create_payment_intent(
         print(f"🔧 DEBUG: - Amount: {payment_data.amount}")
         print(f"🔧 DEBUG: - Type credits: {type(payment_data.credits)}")
         print(f"🔧 DEBUG: - Type amount: {type(payment_data.amount)}")
+        print(f"🔧 DEBUG: - Payment data: {payment_data}")
         
         # Validation des données
         if not isinstance(payment_data.credits, int) or payment_data.credits <= 0:
@@ -581,7 +582,8 @@ async def create_payment_intent(
         print(f"❌ Type d'erreur: {type(e)}")
         import traceback
         print(f"❌ Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
+        error_detail = f"Erreur: {str(e)}" if str(e) else "Erreur inconnue"
+        raise HTTPException(status_code=400, detail=error_detail)
 
 @app.post("/api/payments/confirm")
 async def confirm_payment(session_id: str):
