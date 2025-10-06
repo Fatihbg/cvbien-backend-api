@@ -128,16 +128,16 @@ app.add_middleware(
 # Endpoints
 @app.get("/")
 async def root():
-    return {"message": "CVbien API - Firebase Version", "version": "4.2.0", "database": "Firebase Firestore", "status": "ACTIVE"}
+    return {"message": "CVbien API - Firebase Version", "version": "4.3.0", "database": "Firebase Firestore", "status": "ACTIVE"}
 
 @app.get("/version")
 async def get_version():
     return {
-        "version": "4.2.0",
-        "status": "Firebase Auth Integration",
-        "timestamp": "2025-01-06-00:15",
-        "fix": "Added Firebase Authentication support",
-        "action": "FIREBASE_AUTH_INTEGRATION"
+        "version": "4.3.0",
+        "status": "Firebase Active - Real Keys",
+        "timestamp": "2025-01-06-00:45",
+        "fix": "Firebase configuration with real API keys",
+        "action": "FIREBASE_REAL_KEYS_DEPLOY"
     }
 
 @app.post("/api/auth/register", response_model=dict)
