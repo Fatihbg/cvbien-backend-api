@@ -122,7 +122,7 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
             password_hash TEXT NOT NULL,
-            credits INTEGER DEFAULT 2,
+            credits INTEGER DEFAULT 1,
             created_at TEXT NOT NULL,
             last_login_at TEXT,
             subscription_type TEXT DEFAULT 'free',
@@ -742,6 +742,62 @@ async def test_payment_with_auth(credits: int = 5, amount: int = 1):
             "message": f"Erreur: {str(e)}",
             "traceback": traceback.format_exc()
         }
+
+@app.post("/api/confirm-test-payment")
+async def confirm_test_payment(session_id: str, user_id: str = "test_user", credits: int = 5):
+    """Confirmer un paiement de test et ajouter les crédits"""
+    try:
+        print(f"🔧 DEBUG: Confirmation paiement test - User: {user_id}, Credits: {credits}")
+        
+        # Ajouter les crédits à l'utilisateur
+        conn = sqlite3.connect('cvbien.db')
+        cursor = conn.cursor()
+        
+        # Récupérer les crédits actuels
+        cursor.execute("SELECT credits FROM users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            current_credits = result[0]
+            new_credits = current_credits + credits
+            
+            # Mettre à jour les crédits
+            cursor.execute("UPDATE users SET credits = ? WHERE id = ?", (new_credits, user_id))
+            conn.commit()
+            
+            print(f"✅ DEBUG: Crédits mis à jour - Avant: {current_credits}, Après: {new_credits}")
+            
+            return {
+                "status": "success",
+                "message": f"{credits} crédits ajoutés avec succès",
+                "credits_added": credits,
+                "total_credits": new_credits
+            }
+        else:
+            # Créer l'utilisateur s'il n'existe pas
+            cursor.execute("INSERT INTO users (id, email, credits) VALUES (?, ?, ?)", (user_id, "test@example.com", credits))
+            conn.commit()
+            
+            print(f"✅ DEBUG: Utilisateur créé avec {credits} crédits")
+            
+            return {
+                "status": "success",
+                "message": f"Utilisateur créé avec {credits} crédits",
+                "credits_added": credits,
+                "total_credits": credits
+            }
+        
+    except Exception as e:
+        print(f"❌ Erreur confirmation paiement: {str(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return {
+            "status": "error",
+            "message": f"Erreur: {str(e)}"
+        }
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @app.post("/api/test-payment-simple")
 async def test_payment_simple(credits: int = 5, amount: int = 1):
