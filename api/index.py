@@ -459,6 +459,73 @@ async def confirm_payment(request: dict):
         print(f"❌ Erreur confirmation paiement: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur confirmation: {str(e)}")
 
+@app.post("/api/payments/confirm-payment-stripe")
+async def confirm_payment_stripe(request: dict):
+    """Confirmer un paiement en utilisant les métadonnées Stripe"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        session_id = request.get("session_id")
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id manquant")
+        
+        print(f"🔧 DEBUG confirm-payment-stripe: session_id={session_id}")
+        
+        # Récupérer la session Stripe pour obtenir les métadonnées
+        import requests
+        stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+        
+        headers = {
+            'Authorization': f'Bearer {stripe_secret_key}',
+        }
+        
+        response = requests.get(f'https://api.stripe.com/v1/checkout/sessions/{session_id}', headers=headers)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur récupération session Stripe: {response.status_code} - {response.text}")
+            raise HTTPException(status_code=500, detail=f"Erreur Stripe: {response.text}")
+        
+        session = response.json()
+        metadata = session.get('metadata', {})
+        user_id = metadata.get('user_id')
+        credits = int(metadata.get('credits', 0))
+        
+        print(f"🔧 DEBUG: user_id={user_id}, credits={credits}")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id manquant dans les métadonnées")
+        
+        # Récupérer l'utilisateur
+        user_doc = db.collection('users').document(user_id).get()
+        print(f"🔧 DEBUG: user_doc.exists={user_doc.exists}")
+        
+        if not user_doc.exists:
+            print(f"❌ Utilisateur {user_id} non trouvé dans Firestore")
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        user_data = user_doc.to_dict()
+        current_credits = user_data.get("credits", 0)
+        new_credits = current_credits + credits
+        
+        print(f"🔧 DEBUG: current_credits={current_credits}, new_credits={new_credits}")
+        
+        # Mettre à jour les crédits
+        db.collection('users').document(user_id).update({"credits": new_credits})
+        
+        print(f"✅ Crédits mis à jour via Stripe: {credits} ajoutés, total: {new_credits}")
+        
+        return {
+            "success": True,
+            "credits": new_credits,
+            "added": credits,
+            "method": "stripe_metadata"
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur confirmation paiement Stripe: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur confirmation: {str(e)}")
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     print(f"🚀 Démarrage du serveur Firebase sur le port {port}")
