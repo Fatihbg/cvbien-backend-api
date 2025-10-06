@@ -36,12 +36,43 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 print(f"🔧 DEBUG: Stripe API Key loaded: {stripe.api_key[:10] if stripe.api_key else 'None'}...")
 
 # Configuration Firebase
-if not firebase_admin._apps:
-    # Utiliser les credentials par défaut (variables d'environnement)
-    cred = credentials.ApplicationDefault()
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+try:
+    if not firebase_admin._apps:
+        # Utiliser les credentials depuis les variables d'environnement
+        firebase_credentials = {
+            "type": "service_account",
+            "project_id": os.getenv("FIREBASE_PROJECT_ID", "cvbien-backend"),
+            "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+            "private_key": os.getenv("FIREBASE_PRIVATE_KEY", "").replace('\\n', '\n'),
+            "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+            "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL")
+        }
+        
+        # Vérifier que toutes les clés nécessaires sont présentes
+        required_keys = ["private_key_id", "private_key", "client_email", "client_id", "client_x509_cert_url"]
+        missing_keys = [key for key in required_keys if not firebase_credentials.get(key)]
+        
+        if missing_keys:
+            raise Exception(f"Variables d'environnement Firebase manquantes: {missing_keys}")
+        
+        cred = credentials.Certificate(firebase_credentials)
+        firebase_admin.initialize_app(cred)
+        print("🔥 Firebase Admin SDK initialisé avec succès")
+    else:
+        print("🔥 Firebase Admin SDK déjà initialisé")
+        
+    # Initialiser Firestore
+    db = firestore.client()
+    print("🔥 Firestore client initialisé")
+    
+except Exception as e:
+    print(f"❌ Erreur initialisation Firebase: {e}")
+    print("🔄 Fallback vers SQLite...")
+    db = None
 
 # Configuration OpenAI
 openai.api_key = os.getenv("OPENAI_API_KEY")
