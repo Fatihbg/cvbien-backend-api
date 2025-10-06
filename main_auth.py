@@ -22,10 +22,14 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement depuis .env
 load_dotenv()
 
+# Configuration Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-if not stripe.api_key:
-    print("⚠️ WARNING: STRIPE_SECRET_KEY not configured - using test mode")
-    stripe.api_key = "sk_test_51234567890abcdef"  # Clé de test factice
+print(f"🔧 DEBUG: Stripe API Key loaded: {stripe.api_key[:10] if stripe.api_key else 'None'}...")
+
+# Vérifier et corriger la clé Stripe si nécessaire
+if not stripe.api_key or not stripe.api_key.startswith("sk_"):
+    print("⚠️ WARNING: STRIPE_SECRET_KEY not configured properly")
+    raise Exception("STRIPE_SECRET_KEY must be configured with a valid Stripe secret key (starts with sk_)")
 
 # Modèles Pydantic
 class UserCreate(BaseModel):
@@ -514,55 +518,45 @@ async def create_payment_intent(
         if not isinstance(payment_data.amount, (int, float)) or payment_data.amount <= 0:
             raise ValueError(f"Amount invalide: {payment_data.amount}")
         
-        # Créer une vraie session de paiement Stripe
-        try:
-            print(f"🔧 DEBUG: Configuration Stripe - API Key: {stripe.api_key[:10]}...")
-            print(f"🔧 DEBUG: Création session pour {payment_data.credits} crédits à {payment_data.amount}€")
-            
-            # Créer une session de checkout Stripe
-            checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'eur',
-                        'product_data': {
-                            'name': f'{payment_data.credits} crédits CVbien',
-                        },
-                        'unit_amount': payment_data.amount * 100,  # Montant en centimes
+        # Créer une session de paiement Stripe
+        print(f"🔧 DEBUG: Configuration Stripe - API Key: {stripe.api_key[:10]}...")
+        print(f"🔧 DEBUG: Création session pour {payment_data.credits} crédits à {payment_data.amount}€")
+        
+        # Vérifier la configuration Stripe
+        if not stripe.api_key or not stripe.api_key.startswith("sk_"):
+            raise HTTPException(status_code=400, detail="Configuration Stripe invalide. Veuillez configurer STRIPE_SECRET_KEY.")
+        
+        # Créer une session de checkout Stripe
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {
+                        'name': f'{payment_data.credits} crédits CVbien',
                     },
-                    'quantity': 1,
-                }],
-                mode='payment',
-                success_url=f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={payment_data.credits}&user_id={user_id}',
-                cancel_url='https://cvbien4.vercel.app/payment-cancel',
-                metadata={
-                    'user_id': user_id,
-                    'credits': str(payment_data.credits),
-                    'amount': str(payment_data.amount)
-                }
-            )
-            
-            print(f"✅ DEBUG: Session Stripe créée: {checkout_session.id}")
-            
-            response = PaymentIntentResponse(
-                client_secret=checkout_session.payment_intent,
-                amount=payment_data.amount,
-                credits=payment_data.credits,
-                checkout_url=checkout_session.url
-            )
-            
-        except stripe.error.StripeError as e:
-            print(f"❌ Erreur Stripe: {str(e)}")
-            print(f"❌ Type d'erreur Stripe: {type(e)}")
-            print(f"❌ Code d'erreur: {getattr(e, 'code', 'N/A')}")
-            print(f"❌ Paramètre: {getattr(e, 'param', 'N/A')}")
-            raise HTTPException(status_code=400, detail=f"Erreur de paiement Stripe: {str(e)}")
-        except Exception as e:
-            print(f"❌ Erreur générale: {str(e)}")
-            print(f"❌ Type d'erreur: {type(e)}")
-            import traceback
-            print(f"❌ Traceback: {traceback.format_exc()}")
-            raise HTTPException(status_code=400, detail=f"Erreur: {str(e)}")
+                    'unit_amount': payment_data.amount * 100,  # Montant en centimes
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f'https://cvbien4.vercel.app/payment-success?session_id={{CHECKOUT_SESSION_ID}}&credits={payment_data.credits}&user_id={user_id}',
+            cancel_url='https://cvbien4.vercel.app/payment-cancel',
+            metadata={
+                'user_id': user_id,
+                'credits': str(payment_data.credits),
+                'amount': str(payment_data.amount)
+            }
+        )
+        
+        print(f"✅ DEBUG: Session Stripe créée: {checkout_session.id}")
+        
+        response = PaymentIntentResponse(
+            client_secret=checkout_session.payment_intent,
+            amount=payment_data.amount,
+            credits=payment_data.credits,
+            checkout_url=checkout_session.url
+        )
         
         print(f"✅ DEBUG: Réponse générée: {response}")
         return response
