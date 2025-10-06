@@ -743,6 +743,57 @@ async def test_payment_with_auth(credits: int = 5, amount: int = 1):
             "traceback": traceback.format_exc()
         }
 
+@app.post("/api/test-payment-simple")
+async def test_payment_simple(credits: int = 5, amount: int = 1):
+    """Test simple de création de session de paiement sans authentification"""
+    try:
+        print(f"🔧 DEBUG: Test simple - Credits: {credits}, Amount: {amount}")
+        
+        # Créer une session de checkout Stripe avec l'API REST
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {stripe.api_key}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        
+        data = {
+            'payment_method_types[]': 'card',
+            'line_items[0][price_data][currency]': 'eur',
+            'line_items[0][price_data][product_data][name]': f'{credits} crédits CVbien',
+            'line_items[0][price_data][unit_amount]': amount * 100,
+            'line_items[0][quantity]': 1,
+            'mode': 'payment',
+            'success_url': 'https://cvbien4.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url': 'https://cvbien4.vercel.app/payment-cancel',
+            'metadata[user_id]': 'test_user',
+            'metadata[credits]': str(credits),
+            'metadata[amount]': str(amount)
+        }
+        
+        response = requests.post('https://api.stripe.com/v1/checkout/sessions', headers=headers, data=data)
+        
+        if response.status_code != 200:
+            raise Exception(f"Stripe API error: {response.status_code} - {response.text}")
+        
+        checkout_session_data = response.json()
+        
+        return {
+            "client_secret": checkout_session_data.get('payment_intent', 'N/A'),
+            "amount": amount,
+            "credits": credits,
+            "checkout_url": checkout_session_data["url"]
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur test simple: {str(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return {
+            "error": f"Erreur: {str(e)}",
+            "traceback": traceback.format_exc()
+        }
+
 @app.post("/api/test-payment")
 async def test_payment():
     """Tester la création d'une session de paiement"""
