@@ -128,7 +128,7 @@ app.add_middleware(
 # Endpoints
 @app.get("/")
 async def root():
-    return {"message": "CVbien API - Firebase Version", "version": "4.0.0"}
+    return {"message": "CVbien API - Firebase Version", "version": "4.1.0", "database": "Firebase Firestore", "status": "ACTIVE"}
 
 @app.get("/version")
 async def get_version():
