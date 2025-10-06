@@ -143,7 +143,7 @@ async def validate_firebase_token(token_data: dict):
             user_data = {
                 "email": decoded_token.get("email"),
                 "name": decoded_token.get("name", ""),
-                "credits": 5,  # Crédits gratuits
+                "credits": 2,  # Crédits gratuits
                 "created_at": datetime.now().isoformat()
             }
             db.collection('users').document(uid).set(user_data)
@@ -188,6 +188,38 @@ async def get_user_profile(current_user: dict = Depends(verify_token)):
             
     except Exception as e:
         print(f"❌ Erreur récupération profil: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
+
+@app.post("/api/user/consume-credits")
+async def consume_credits(amount: int, current_user: dict = Depends(verify_token)):
+    """Consommer des crédits"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        uid = current_user['uid']
+        user_doc = db.collection('users').document(uid).get()
+        
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        user_data = user_doc.to_dict()
+        current_credits = user_data.get("credits", 0)
+        
+        if current_credits < amount:
+            raise HTTPException(status_code=400, detail="Crédits insuffisants")
+        
+        new_credits = current_credits - amount
+        db.collection('users').document(uid).update({"credits": new_credits})
+        
+        return {
+            "success": True,
+            "credits": new_credits,
+            "consumed": amount
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur consommation crédits: {e}")
         raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 if __name__ == "__main__":
