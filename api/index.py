@@ -819,10 +819,13 @@ async def optimize_cv(request: CVGenerationRequest):
 
      🚨🚨🚨 RÈGLE DE LANGUE ABSOLUE - PRIORITÉ #1 - OBLIGATOIRE 🚨🚨🚨
      1. LIS la description d'emploi ci-dessous.
-     2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, etc.).
+     2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, néerlandais, etc.).
      3. GÉNÈRE le CV ENTIER dans cette langue détectée.
      4. JAMAIS de mélange de langues dans le CV.
      5. Cette règle est ABSOLUE et doit être respectée à 100%.
+     6. EXEMPLE : Si l'offre est en néerlandais → CV en néerlandais avec "WERKERVARING", "OPLEIDING", "VAARDIGHEDEN"
+     7. EXEMPLE : Si l'offre est en anglais → CV en anglais avec "PROFESSIONAL EXPERIENCE", "EDUCATION", "SKILLS"
+     8. EXEMPLE : Si l'offre est en français → CV en français avec "EXPÉRIENCE PROFESSIONNELLE", "FORMATION", "COMPÉTENCES"
 
      STRUCTURE OBLIGATOIRE À RESPECTER :
 
@@ -838,6 +841,13 @@ async def optimize_cv(request: CVGenerationRequest):
         - **COMPÉTENCES** (ou équivalent dans la langue détectée)
         - **CERTIFICATIONS & RÉALISATIONS** (ou équivalent dans la langue détectée)
         - **INFORMATIONS ADDITIONNELLES** (ou équivalent dans la langue détectée)
+
+     EXEMPLES DE TRADUCTION DES SECTIONS :
+     - FRANÇAIS : EXPÉRIENCE PROFESSIONNELLE, FORMATION, COMPÉTENCES, CERTIFICATIONS
+     - ANGLAIS : PROFESSIONAL EXPERIENCE, EDUCATION, SKILLS, CERTIFICATIONS
+     - NÉERLANDAIS : WERKERVARING, OPLEIDING, VAARDIGHEDEN, CERTIFICERINGEN
+     - ALLEMAND : BERUFSERFAHRUNG, AUSBILDUNG, FÄHIGKEITEN, ZERTIFIKATE
+     - ESPAGNOL : EXPERIENCIA PROFESIONAL, EDUCACIÓN, HABILIDADES, CERTIFICACIONES
 
      3. **FORMAT EXPÉRIENCE** :
         • **Titre du Poste** (en gras)
@@ -869,6 +879,8 @@ async def optimize_cv(request: CVGenerationRequest):
 
 DESCRIPTION DU POSTE :
 {request.job_description}
+
+IMPORTANT : Le CV généré DOIT être dans la MÊME LANGUE que la description du poste. Si la description est en néerlandais, le CV doit être en néerlandais. Si elle est en anglais, le CV doit être en anglais. Etc.
 
 Optimise ce CV pour qu'il corresponde parfaitement à l'offre d'emploi !"""
                 }
