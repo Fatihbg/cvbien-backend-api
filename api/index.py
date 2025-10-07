@@ -66,7 +66,7 @@ class PDFExtractionResponse(BaseModel):
     success: bool
     message: str
 
-app = FastAPI(title="CV Bien API", version="6.4.0")
+app = FastAPI(title="CV Bien API", version="7.0.0-CORS-FIXED")
 
 # Configuration CORS
 app.add_middleware(
@@ -173,20 +173,26 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 @app.get("/")
 def read_root():
     return {
-        "message": "CV Bien API v6.1.0", 
+        "message": "CV Bien API v7.0.0", 
         "status": "online",
-        "firebase": "active" if db else "inactive"
+        "firebase": "active" if db else "inactive",
+        "cors": "ENABLED"
     }
+
+@app.get("/test-cors")
+def test_cors():
+    return {"message": "CORS OK ✅", "version": "7.0.0", "cors_headers": "ACTIVE"}
 
 @app.get("/version")
 def version():
     return {
-        "version": "6.4.0",
-        "status": "Firebase Active with Stripe & OpenAI" if db and OPENAI_AVAILABLE else "Firebase Inactive",
-        "timestamp": "2025-01-06-03:00",
+        "version": "7.0.0-CORS-FIXED",
+        "status": "Firebase Active with Stripe & OpenAI & CORS" if db and OPENAI_AVAILABLE else "Firebase Inactive",
+        "timestamp": "2025-01-06-04:00",
         "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing",
         "openai_available": OPENAI_AVAILABLE,
-        "openai_key": "configured" if os.getenv("OPENAI_API_KEY") else "missing"
+        "openai_key": "configured" if os.getenv("OPENAI_API_KEY") else "missing",
+        "cors": "ENABLED"
     }
 
 @app.get("/test-openai")
