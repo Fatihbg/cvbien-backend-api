@@ -192,12 +192,16 @@ def read_root():
 
 @app.get("/test-cors")
 def test_cors():
-    return {"message": "CORS OK ✅", "version": "7.0.0", "cors_headers": "ACTIVE"}
+    return {"message": "CORS OK ✅", "version": "7.2.0", "cors_headers": "ACTIVE", "timestamp": "2025-01-06-05:00"}
+
+@app.options("/test-cors")
+def test_cors_options():
+    return {"message": "CORS OPTIONS OK ✅", "version": "7.2.0"}
 
 @app.get("/version")
 def version():
     return {
-        "version": "7.0.0-CORS-FIXED",
+        "version": "7.2.0-CORS-URGENT",
         "status": "Firebase Active with Stripe & OpenAI & CORS" if db and OPENAI_AVAILABLE else "Firebase Inactive",
         "timestamp": "2025-01-06-04:00",
         "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing",
