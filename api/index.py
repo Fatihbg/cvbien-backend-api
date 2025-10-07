@@ -838,60 +838,67 @@ async def optimize_cv(request: CVGenerationRequest):
      - ALLEMAND : BERUFLICHES PROFIL, BERUFSERFAHRUNG, AUSBILDUNG, TECHNISCHE FÄHIGKEITEN, ZERTIFIKATE & LEISTUNGEN, ZUSÄTZLICHE INFORMATIONEN
      - ESPAGNOL : RESUMEN PROFESIONAL, EXPERIENCIA PROFESIONAL, EDUCACIÓN, HABILIDADES TÉCNICAS, CERTIFICACIONES Y LOGROS, INFORMACIÓN ADICIONAL
 
-     STRUCTURE OBLIGATOIRE À RESPECTER (EXACTEMENT COMME L'EXEMPLE) :
+     STRUCTURE OBLIGATOIRE À RESPECTER :
 
-     1. **EN-TÊTE** :
+     1. EN-TÊTE :
         - Nom complet en GRAS et CENTRÉ (couleur bleue)
         - Coordonnées centrées sur une ligne : "Ville | Téléphone | Email | Site web"
         - Titre du poste en GRAS et centré (sous les coordonnées)
 
-     2. **SECTIONS** (titre en MAJUSCULES + GRAS + ligne horizontale bleue) :
-        - **PROFESSIONAL SUMMARY** (ou équivalent dans la langue détectée)
-        - **PROFESSIONAL EXPERIENCE** (ou équivalent dans la langue détectée)
-        - **EDUCATION** (ou équivalent dans la langue détectée)
-        - **TECHNICAL SKILLS** (ou équivalent dans la langue détectée)
-        - **CERTIFICATIONS & ACHIEVEMENTS** (ou équivalent dans la langue détectée)
-        - **ADDITIONAL INFORMATION** (ou équivalent dans la langue détectée)
+     2. SECTIONS (titre en MAJUSCULES + GRAS + ligne horizontale bleue RAPPROCHÉE) :
+        - PROFESSIONAL SUMMARY (ou équivalent dans la langue détectée)
+        - PROFESSIONAL EXPERIENCE (ou équivalent dans la langue détectée)
+        - EDUCATION (ou équivalent dans la langue détectée)
+        - TECHNICAL SKILLS (ou équivalent dans la langue détectée)
+        - CERTIFICATIONS & ACHIEVEMENTS (ou équivalent dans la langue détectée)
+        - ADDITIONAL INFORMATION (ou équivalent dans la langue détectée)
 
-     3. **FORMAT PROFESSIONAL SUMMARY** :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
-        - Paragraphe de description (pas de bullet points)
+     3. FORMAT PROFESSIONAL SUMMARY :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
+        - Paragraphe de description SANS titre "RÉSUMÉ PROFESSIONNEL" (juste le texte)
 
-     4. **FORMAT PROFESSIONAL EXPERIENCE** :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
-        - **Titre du Poste** (en gras)
+     4. FORMAT PROFESSIONAL EXPERIENCE :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
+        - Titre du Poste (en gras)
         - Nom de l'entreprise (Dates)
         - • Description avec chiffres et pourcentages
         - • Description avec chiffres et pourcentages
 
-     5. **FORMAT EDUCATION** :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
-        - **Nom du Diplôme** (en gras)
+     5. FORMAT EDUCATION :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
+        - Nom du Diplôme (en gras)
         - Institution (Dates)
         - • Spécialisation/détails
 
-     6. **FORMAT TECHNICAL SKILLS** :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
-        - **Catégorie:** (en gras)
+     6. FORMAT TECHNICAL SKILLS :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
+        - Catégorie: (en gras)
         - Liste séparée par virgules
 
-     7. **FORMAT CERTIFICATIONS & ACHIEVEMENTS** :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+     7. FORMAT CERTIFICATIONS & ACHIEVEMENTS :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
         - • Certification 1
         - • Certification 2
 
-     8. **FORMAT ADDITIONAL INFORMATION** :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+     8. FORMAT ADDITIONAL INFORMATION :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
         - • Information 1
         - • Information 2
 
-     9. **STYLE PROFESSIONNEL** :
+     9. STYLE PROFESSIONNEL :
         - Chiffres partout : "Boosté les ventes de 150%", "Dirigé 12 experts", "Généré 2M€"
         - Formulations percutantes
         - Couleurs : Nom en bleu, titres de sections en bleu, lignes horizontales en bleu
+        - Ligne horizontale RAPPROCHÉE des titres de sections
         - Espacement cohérent entre sections
 
-     IMPORTANT : Respecte EXACTEMENT cette structure comme dans l'exemple fourni."""
+     10. INTELLIGENCE DE PLACEMENT :
+        - Analyse intelligemment le CV original
+        - Place chaque information dans la bonne section
+        - Adapte le contenu selon la langue de l'offre d'emploi
+        - Utilise les données de l'aperçu comme référence
+
+     IMPORTANT : Respecte EXACTEMENT cette structure et utilise l'intelligence pour placer les informations correctement."""
                 },
                 {
                     "role": "user",
@@ -908,6 +915,13 @@ Le CV généré DOIT être dans la MÊME LANGUE que la description du poste.
 - Si la description est en français → CV en français
 - Si la description est en allemand → CV en allemand
 - Si la description est en espagnol → CV en espagnol
+
+IMPORTANT :
+- Retire tous les ** du CV
+- Ne mets PAS de titre "RÉSUMÉ PROFESSIONNEL" mais garde le texte
+- Rapproche les lignes horizontales des titres de sections
+- Utilise l'intelligence pour placer les informations dans les bonnes sections
+- Le CV final doit être dans la langue de la description, peu importe la langue du CV de base
 
 Génère un CV avec la structure EXACTE de l'exemple fourni, dans la langue de l'offre d'emploi !"""
                 }
