@@ -66,7 +66,7 @@ class PDFExtractionResponse(BaseModel):
     success: bool
     message: str
 
-app = FastAPI(title="CV Bien API", version="8.0.0-CV-IMPROVEMENTS")
+app = FastAPI(title="CV Bien API", version="8.1.0-CV-STRUCTURE-PERFECT")
 
 # Configuration des domaines autorisés
 ALLOWED_ORIGINS = [
@@ -198,16 +198,16 @@ def emergency_cors():
 
 @app.get("/version")
 def version():
-    return {
-        "version": "8.0.0-CV-IMPROVEMENTS",
-        "status": "Firebase Active with Stripe & OpenAI & CORS" if db and OPENAI_AVAILABLE else "Firebase Inactive",
-        "timestamp": "2025-01-06-07:00",
-        "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing",
-        "openai_available": OPENAI_AVAILABLE,
-        "openai_key": "configured" if os.getenv("OPENAI_API_KEY") else "missing",
-        "cors": "ENABLED",
-        "cv_improvements": "✅ ** removed, language adaptation, structure improved"
-    }
+         return {
+             "version": "8.1.0-CV-STRUCTURE-PERFECT",
+             "status": "Firebase Active with Stripe & OpenAI & CORS" if db and OPENAI_AVAILABLE else "Firebase Inactive",
+             "timestamp": "2025-01-06-08:00",
+             "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing",
+             "openai_available": OPENAI_AVAILABLE,
+             "openai_key": "configured" if os.getenv("OPENAI_API_KEY") else "missing",
+             "cors": "ENABLED",
+             "cv_improvements": "✅ Structure parfaite: pas de *, pas de gros mensonges, filtrage intelligent, une seule page"
+         }
 
 @app.get("/test-openai")
 def test_openai():
