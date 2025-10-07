@@ -790,13 +790,13 @@ async def optimize_cv(request: CVGenerationRequest):
     print(f"🔍 DEBUG - job_description: {request.job_description[:100] if request.job_description else 'VIDE'}...")
     print(f"🔍 DEBUG - user_id: {request.user_id}")
     
-    # Validation des champs requis
-    if not request.cv_content or not request.cv_content.strip():
-        raise HTTPException(status_code=422, detail="cv_content est requis et ne peut pas être vide")
-    if not request.job_description or not request.job_description.strip():
-        raise HTTPException(status_code=422, detail="job_description est requis et ne peut pas être vide")
-    if not request.user_id or not request.user_id.strip():
-        raise HTTPException(status_code=422, detail="user_id est requis et ne peut pas être vide")
+         # Validation des champs requis
+         if not request.cv_content or not request.cv_content.strip():
+             raise HTTPException(status_code=422, detail="cv_content est requis et ne peut pas être vide")
+         if not request.job_description or not request.job_description.strip():
+             raise HTTPException(status_code=422, detail="job_description est requis et ne peut pas être vide")
+         if not request.user_id or not request.user_id.strip():
+             raise HTTPException(status_code=422, detail="user_id est requis et ne peut pas être vide")
     
     if not OPENAI_AVAILABLE:
         raise HTTPException(status_code=503, detail="OpenAI SDK non disponible")
@@ -830,54 +830,68 @@ async def optimize_cv(request: CVGenerationRequest):
      3. GÉNÈRE le CV ENTIER dans cette langue détectée.
      4. JAMAIS de mélange de langues dans le CV.
      5. Cette règle est ABSOLUE et doit être respectée à 100%.
-     6. EXEMPLE : Si l'offre est en néerlandais → CV en néerlandais avec "WERKERVARING", "OPLEIDING", "VAARDIGHEDEN"
-     7. EXEMPLE : Si l'offre est en anglais → CV en anglais avec "PROFESSIONAL EXPERIENCE", "EDUCATION", "SKILLS"
-     8. EXEMPLE : Si l'offre est en français → CV en français avec "EXPÉRIENCE PROFESSIONNELLE", "FORMATION", "COMPÉTENCES"
-
-     STRUCTURE OBLIGATOIRE À RESPECTER :
-
-     1. **EN-TÊTE** :
-        - Nom complet en GRAS et CENTRÉ
-        - Coordonnées centrées (adresse | téléphone | email | site web)
-        - Titre du poste en GRAS et centré
-        - Résumé professionnel en paragraphe (SANS titre "PROFESSIONAL SUMMARY")
-
-     2. **SECTIONS** (titre en MAJUSCULES + GRAS + souligné) :
-        - **EXPERIENCE** (ou équivalent dans la langue détectée)
-        - **FORMATION** (ou équivalent dans la langue détectée)
-        - **COMPÉTENCES** (ou équivalent dans la langue détectée)
-        - **CERTIFICATIONS & RÉALISATIONS** (ou équivalent dans la langue détectée)
-        - **INFORMATIONS ADDITIONNELLES** (ou équivalent dans la langue détectée)
 
      EXEMPLES DE TRADUCTION DES SECTIONS :
-     - FRANÇAIS : EXPÉRIENCE PROFESSIONNELLE, FORMATION, COMPÉTENCES, CERTIFICATIONS
-     - ANGLAIS : PROFESSIONAL EXPERIENCE, EDUCATION, SKILLS, CERTIFICATIONS
-     - NÉERLANDAIS : WERKERVARING, OPLEIDING, VAARDIGHEDEN, CERTIFICERINGEN
-     - ALLEMAND : BERUFSERFAHRUNG, AUSBILDUNG, FÄHIGKEITEN, ZERTIFIKATE
-     - ESPAGNOL : EXPERIENCIA PROFESIONAL, EDUCACIÓN, HABILIDADES, CERTIFICACIONES
+     - FRANÇAIS : RÉSUMÉ PROFESSIONNEL, EXPÉRIENCE PROFESSIONNELLE, FORMATION, COMPÉTENCES TECHNIQUES, CERTIFICATIONS & RÉALISATIONS, INFORMATIONS ADDITIONNELLES
+     - ANGLAIS : PROFESSIONAL SUMMARY, PROFESSIONAL EXPERIENCE, EDUCATION, TECHNICAL SKILLS, CERTIFICATIONS & ACHIEVEMENTS, ADDITIONAL INFORMATION
+     - NÉERLANDAIS : PROFESSIONEEL PROFIEL, WERKERVARING, OPLEIDING, TECHNISCHE VAARDIGHEDEN, CERTIFICERINGEN & PRESTATIES, AANVULLENDE INFORMATIE
+     - ALLEMAND : BERUFLICHES PROFIL, BERUFSERFAHRUNG, AUSBILDUNG, TECHNISCHE FÄHIGKEITEN, ZERTIFIKATE & LEISTUNGEN, ZUSÄTZLICHE INFORMATIONEN
+     - ESPAGNOL : RESUMEN PROFESIONAL, EXPERIENCIA PROFESIONAL, EDUCACIÓN, HABILIDADES TÉCNICAS, CERTIFICACIONES Y LOGROS, INFORMACIÓN ADICIONAL
 
-     3. **FORMAT EXPÉRIENCE** :
-        • **Titre du Poste** (en gras)
-        Nom de l'entreprise (Dates)
-        - Description avec chiffres et pourcentages
-        - Description avec chiffres et pourcentages
+     STRUCTURE OBLIGATOIRE À RESPECTER (EXACTEMENT COMME L'EXEMPLE) :
 
-     4. **FORMAT FORMATION** :
-        • **Nom du Diplôme** (en gras)
-        Institution (Dates)
-        - Spécialisation/détails
+     1. **EN-TÊTE** :
+        - Nom complet en GRAS et CENTRÉ (couleur bleue)
+        - Coordonnées centrées sur une ligne : "Ville | Téléphone | Email | Site web"
+        - Titre du poste en GRAS et centré (sous les coordonnées)
 
-     5. **FORMAT COMPÉTENCES** :
-        • **Catégorie:** (en gras)
-        Liste séparée par virgules
+     2. **SECTIONS** (titre en MAJUSCULES + GRAS + ligne horizontale bleue) :
+        - **PROFESSIONAL SUMMARY** (ou équivalent dans la langue détectée)
+        - **PROFESSIONAL EXPERIENCE** (ou équivalent dans la langue détectée)
+        - **EDUCATION** (ou équivalent dans la langue détectée)
+        - **TECHNICAL SKILLS** (ou équivalent dans la langue détectée)
+        - **CERTIFICATIONS & ACHIEVEMENTS** (ou équivalent dans la langue détectée)
+        - **ADDITIONAL INFORMATION** (ou équivalent dans la langue détectée)
 
-     6. **STYLE PROFESSIONNEL** :
+     3. **FORMAT PROFESSIONAL SUMMARY** :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+        - Paragraphe de description (pas de bullet points)
+
+     4. **FORMAT PROFESSIONAL EXPERIENCE** :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+        - **Titre du Poste** (en gras)
+        - Nom de l'entreprise (Dates)
+        - • Description avec chiffres et pourcentages
+        - • Description avec chiffres et pourcentages
+
+     5. **FORMAT EDUCATION** :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+        - **Nom du Diplôme** (en gras)
+        - Institution (Dates)
+        - • Spécialisation/détails
+
+     6. **FORMAT TECHNICAL SKILLS** :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+        - **Catégorie:** (en gras)
+        - Liste séparée par virgules
+
+     7. **FORMAT CERTIFICATIONS & ACHIEVEMENTS** :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+        - • Certification 1
+        - • Certification 2
+
+     8. **FORMAT ADDITIONAL INFORMATION** :
+        - Titre de section en MAJUSCULES + GRAS + ligne horizontale
+        - • Information 1
+        - • Information 2
+
+     9. **STYLE PROFESSIONNEL** :
         - Chiffres partout : "Boosté les ventes de 150%", "Dirigé 12 experts", "Généré 2M€"
         - Formulations percutantes
-        - Tout en NOIR (pas de bleu)
+        - Couleurs : Nom en bleu, titres de sections en bleu, lignes horizontales en bleu
         - Espacement cohérent entre sections
 
-     IMPORTANT : Respecte EXACTEMENT cette structure, utilise les bullet points (• et -) comme indiqué."""
+     IMPORTANT : Respecte EXACTEMENT cette structure comme dans l'exemple fourni."""
                 },
                 {
                     "role": "user",
@@ -887,9 +901,15 @@ async def optimize_cv(request: CVGenerationRequest):
 DESCRIPTION DU POSTE :
 {request.job_description}
 
-IMPORTANT : Le CV généré DOIT être dans la MÊME LANGUE que la description du poste. Si la description est en néerlandais, le CV doit être en néerlandais. Si elle est en anglais, le CV doit être en anglais. Etc.
+🚨 CRITIQUE - RÈGLE DE LANGUE ABSOLUE :
+Le CV généré DOIT être dans la MÊME LANGUE que la description du poste.
+- Si la description est en néerlandais → CV en néerlandais
+- Si la description est en anglais → CV en anglais  
+- Si la description est en français → CV en français
+- Si la description est en allemand → CV en allemand
+- Si la description est en espagnol → CV en espagnol
 
-Optimise ce CV pour qu'il corresponde parfaitement à l'offre d'emploi !"""
+Génère un CV avec la structure EXACTE de l'exemple fourni, dans la langue de l'offre d'emploi !"""
                 }
             ],
             "max_tokens": 4000,
