@@ -68,15 +68,22 @@ class PDFExtractionResponse(BaseModel):
 
 app = FastAPI(title="CV Bien API", version="7.5.0-CORS-EMERGENCY")
 
+# Configuration des domaines autorisés
+ALLOWED_ORIGINS = [
+    "https://cvbien.dev",          # Nouveau domaine principal
+    "https://cvbien4.vercel.app",  # Frontend principal (backup)
+    "https://cvbien.vercel.app",   # Frontend alternatif (backup)
+    "http://localhost:3000",       # Dev local
+    "http://localhost:5173",       # Dev local Vite
+]
+
+# Configuration des URLs de l'application
+FRONTEND_URL = "https://cvbien.dev"
+
 # Configuration CORS - AVANT TOUTES LES ROUTES
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://cvbien4.vercel.app",  # Frontend principal
-        "https://cvbien.vercel.app",   # Frontend alternatif
-        "http://localhost:3000",       # Dev local
-        "http://localhost:5173",       # Dev local Vite
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -477,8 +484,8 @@ async def create_payment_intent(request: dict, current_user: dict = Depends(veri
             'line_items[0][price_data][unit_amount]': str(amount * 100),
             'line_items[0][quantity]': '1',
             'mode': 'payment',
-            'success_url': f'https://cvbien4.vercel.app/?payment=success&credits={credits}&user_id={current_user["uid"]}&session_id={{CHECKOUT_SESSION_ID}}',
-            'cancel_url': 'https://cvbien4.vercel.app/?payment=cancel',
+            'success_url': f'{FRONTEND_URL}/?payment=success&credits={credits}&user_id={current_user["uid"]}&session_id={{CHECKOUT_SESSION_ID}}',
+            'cancel_url': f'{FRONTEND_URL}/?payment=cancel',
             'metadata[user_id]': current_user['uid'],
             'metadata[credits]': str(credits)
         }
