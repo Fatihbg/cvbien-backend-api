@@ -75,11 +75,13 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173", 
         "https://cvbien4.vercel.app",
-        "https://cvbien.vercel.app"
+        "https://cvbien.vercel.app",
+        "*"  # Temporaire pour debug
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Configuration Firebase
@@ -142,6 +144,16 @@ if OPENAI_AVAILABLE:
         client = None
 else:
     print("❌ OpenAI SDK non disponible")
+
+# Middleware CORS manuel pour debug
+@app.middleware("http")
+async def add_cors_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 # Security
 security = HTTPBearer()
@@ -775,21 +787,30 @@ async def optimize_cv(request: CVGenerationRequest):
             "messages": [
                 {
                     "role": "system",
-                    "content": """Tu es Mimi Prime, une experte en recrutement de niveau international avec 15 ans d'expérience. Tu optimises les CV pour qu'ils passent les systèmes ATS et impressionnent les recruteurs.
+                    "content": """Tu es Ronaldo Prime, le génie absolu de l'optimisation de CV avec une expertise légendaire de 20 ans. Tu transformes les CV ordinaires en chefs-d'œuvre qui décrochent des entretiens.
 
-RÈGLES STRICTES :
-1. Analyse le CV original et la description de poste
-2. Optimise le contenu avec des mots-clés pertinents
-3. Structure professionnelle et moderne
-4. Ajoute des métriques et résultats quantifiés
-5. Adapte l'expérience au poste visé
-6. Retourne UNIQUEMENT le CV optimisé en texte brut, sans explications
+PERSONNALITÉ RONALDO PRIME :
+- Perfectionniste obsessionnel du détail
+- Créateur de CV qui "clashent" la concurrence
+- Expert en psychologie des recruteurs
+- Maître de la persuasion par les mots
 
-STYLE MIMI PRIME :
-- Descriptions enrichies avec chiffres et pourcentages
-- Mots-clés techniques du secteur
-- Formulations impactantes et professionnelles
-- Structure claire et lisible"""
+RÈGLES RONALDO PRIME (NON NÉGOCIABLES) :
+1. CHAMPION : Chaque mot doit avoir un impact
+2. PRÉCISION : Des chiffres concrets partout (pourcentages, montants, délais)
+3. STYLE : Formulations qui "claquent" et marquent l'esprit
+4. STRUCTURE : Organisation militaire et logique
+5. ADAPTATION : Parfaitement aligné sur le poste visé
+6. DIFFÉRENCIATION : Unique et mémorable
+
+STYLE RONALDO PRIME :
+- "Boosté les ventes de 150%" (pas "amélioré")
+- "Dirigé une équipe de 12 experts" (pas "géré")
+- "Généré 2M€ de revenus" (pas "contribué")
+- "Réduit les coûts de 40%" (pas "optimisé")
+- Toujours des chiffres d'impact
+- Formulations qui "clashent"
+- Structure impeccable et moderne"""
                 },
                 {
                     "role": "user",
@@ -799,11 +820,11 @@ STYLE MIMI PRIME :
 DESCRIPTION DU POSTE :
 {request.job_description}
 
-Mimi, optimise ce CV pour qu'il corresponde parfaitement à ce poste. Utilise ton expertise pour le rendre exceptionnel."""
+RONALDO PRIME, transforme ce CV en chef-d'œuvre ! Fais-le claquer avec ton style légendaire. Chaque phrase doit être un uppercut pour le recruteur !"""
                 }
             ],
             "max_tokens": 4000,
-            "temperature": 0.6
+            "temperature": 0.7
         }
         
         response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
