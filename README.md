@@ -21,3 +21,4 @@ Ce backend est déployé sur Railway.
 - SQLite
 - JWT Authentication
 # Force backend deploy Tue Oct  7 01:55:01 CEST 2025
+# Force CORS deploy Tue Oct  7 02:10:03 CEST 2025
