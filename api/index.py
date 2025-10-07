@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uvicorn
@@ -66,7 +66,7 @@ class PDFExtractionResponse(BaseModel):
     success: bool
     message: str
 
-app = FastAPI(title="CV Bien API", version="7.0.0-CORS-FIXED")
+app = FastAPI(title="CV Bien API", version="7.1.0-CORS-AGGRESSIVE")
 
 # Configuration CORS
 app.add_middleware(
@@ -145,14 +145,25 @@ if OPENAI_AVAILABLE:
 else:
     print("❌ OpenAI SDK non disponible")
 
-# Middleware CORS manuel pour debug
+# Middleware CORS manuel pour debug - PLUS AGRESSIF
 @app.middleware("http")
 async def add_cors_headers(request, call_next):
+    # Handle preflight requests
+    if request.method == "OPTIONS":
+        response = Response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Max-Age"] = "86400"
+        return response
+    
     response = await call_next(request)
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
     response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Expose-Headers"] = "*"
     return response
 
 # Security
