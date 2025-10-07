@@ -724,6 +724,9 @@ async def stripe_webhook(request: Request):
 @app.post("/extract-pdf", response_model=PDFExtractionResponse)
 async def extract_pdf(request: PDFExtractionRequest):
     """Extraire le texte d'un PDF"""
+    print(f"🔍 DEBUG - Extraction PDF demandée")
+    print(f"🔍 DEBUG - PDF base64 length: {len(request.pdf_base64)}")
+    
     if not PDF_AVAILABLE:
         raise HTTPException(status_code=503, detail="PyPDF2 non disponible")
     
@@ -763,6 +766,11 @@ async def extract_pdf(request: PDFExtractionRequest):
 @app.post("/optimize-cv", response_model=CVGenerationResponse)
 async def optimize_cv(request: CVGenerationRequest):
     """Optimiser un CV avec OpenAI"""
+    print(f"🔍 DEBUG - Requête reçue: {request}")
+    print(f"🔍 DEBUG - cv_content: {request.cv_content[:100]}...")
+    print(f"🔍 DEBUG - job_description: {request.job_description[:100]}...")
+    print(f"🔍 DEBUG - user_id: {request.user_id}")
+    
     if not OPENAI_AVAILABLE:
         raise HTTPException(status_code=503, detail="OpenAI SDK non disponible")
     
