@@ -790,13 +790,13 @@ async def optimize_cv(request: CVGenerationRequest):
     print(f"🔍 DEBUG - job_description: {request.job_description[:100] if request.job_description else 'VIDE'}...")
     print(f"🔍 DEBUG - user_id: {request.user_id}")
     
-         # Validation des champs requis
-         if not request.cv_content or not request.cv_content.strip():
-             raise HTTPException(status_code=422, detail="cv_content est requis et ne peut pas être vide")
-         if not request.job_description or not request.job_description.strip():
-             raise HTTPException(status_code=422, detail="job_description est requis et ne peut pas être vide")
-         if not request.user_id or not request.user_id.strip():
-             raise HTTPException(status_code=422, detail="user_id est requis et ne peut pas être vide")
+    # Validation des champs requis
+    if not request.cv_content or not request.cv_content.strip():
+        raise HTTPException(status_code=422, detail="cv_content est requis et ne peut pas être vide")
+    if not request.job_description or not request.job_description.strip():
+        raise HTTPException(status_code=422, detail="job_description est requis et ne peut pas être vide")
+    if not request.user_id or not request.user_id.strip():
+        raise HTTPException(status_code=422, detail="user_id est requis et ne peut pas être vide")
     
     if not OPENAI_AVAILABLE:
         raise HTTPException(status_code=503, detail="OpenAI SDK non disponible")
