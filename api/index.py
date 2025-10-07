@@ -881,28 +881,38 @@ RÈGLES STRICTES :
    - PAS de chiffres infondés (ex: "200k de chiffre d'affaires")
    - Reste crédible et professionnel
 
-3. **FILTRAGE INTELLIGENT :**
-   - Supprime les jobs étudiants non pertinents (courte durée)
-   - Garde seulement les expériences pertinentes pour le poste
+3. **CONSERVATION OBLIGATOIRE :**
+   - JAMAIS enlever d'informations du CV original
+   - TOUJOURS ajouter/enrichir, jamais supprimer
+   - Conserver TOUS les liens/URLs du CV original
+   - Garder toutes les expériences, même courtes
+   - Préserver toutes les compétences et formations
 
 4. **UNE SEULE PAGE :**
    - Le CV doit impérativement tenir sur 1 page
    - Si nécessaire, compacter le texte ou réduire les espacements
    - JAMAIS 2 pages
 
-5. **STYLE PROFESSIONNEL :**
+5. **ENRICHISSEMENT INTELLIGENT :**
+   - Ajoute des détails pertinents manquants
+   - Enrichit les descriptions existantes
+   - Intègre les mots-clés de l'offre d'emploi
+   - Ajoute des pourcentages réalistes aux réalisations
+   - Complète avec des compétences connexes
+
+6. **STYLE PROFESSIONNEL :**
    - Couleurs : Nom en bleu, titres de sections en bleu, lignes horizontales en bleu
    - Ligne horizontale RAPPROCHÉE des titres de sections
    - Espacement cohérent entre sections
    - Texte sobre, professionnel, compact
 
-6. **INTELLIGENCE DE PLACEMENT :**
+7. **INTELLIGENCE DE PLACEMENT :**
    - Analyse intelligemment le CV original
    - Place chaque information dans la bonne section
    - Adapte le contenu selon la langue de l'offre d'emploi
    - Utilise les données de l'aperçu comme référence
 
-7. **OPTIMISATION ATS :**
+8. **OPTIMISATION ATS :**
    - Utilise le vocabulaire exact de l'offre d'emploi
    - Répète naturellement les mots-clés importants
    - Intègre les compétences demandées (sous forme d'intérêt si absentes)
@@ -927,11 +937,13 @@ DESCRIPTION DU POSTE :
 
 4. **PAS DE GROS MENSONGES :** Utilise seulement des pourcentages réalistes, PAS de chiffres infondés
 
-5. **FILTRAGE INTELLIGENT :** Supprime les jobs étudiants non pertinents (courte durée)
+5. **CONSERVATION ABSOLUE :** JAMAIS enlever d'informations du CV original, TOUJOURS ajouter/enrichir
 
-6. **UNE SEULE PAGE :** Le CV doit tenir sur 1 page, jamais 2 pages
+6. **LIENS OBLIGATOIRES :** Conserver TOUS les liens/URLs du CV original
 
-7. **INTELLIGENCE DE PLACEMENT :** Place chaque information dans la bonne section de façon intelligente
+7. **UNE SEULE PAGE :** Le CV doit tenir sur 1 page, jamais 2 pages
+
+8. **INTELLIGENCE DE PLACEMENT :** Place chaque information dans la bonne section de façon intelligente
 
 Génère un CV professionnel avec cette structure EXACTE, dans la langue de l'offre d'emploi !"""
                      }
