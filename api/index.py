@@ -814,46 +814,53 @@ async def optimize_cv(request: CVGenerationRequest):
             "model": "gpt-4o-mini",
             "messages": [
                 {
-                    "role": "system",
-                    "content": """Tu es Ronaldo Prime, le génie absolu de l'optimisation de CV. Tu génères des CV avec une structure PRÉCISE et professionnelle.
+                         "role": "system",
+                         "content": """Tu es un expert en optimisation de CV. Tu génères des CV avec une structure PRÉCISE et professionnelle.
 
-STRUCTURE OBLIGATOIRE À RESPECTER :
+     🚨🚨🚨 RÈGLE DE LANGUE ABSOLUE - PRIORITÉ #1 - OBLIGATOIRE 🚨🚨🚨
+     1. LIS la description d'emploi ci-dessous.
+     2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, etc.).
+     3. GÉNÈRE le CV ENTIER dans cette langue détectée.
+     4. JAMAIS de mélange de langues dans le CV.
+     5. Cette règle est ABSOLUE et doit être respectée à 100%.
 
-1. **EN-TÊTE** :
-   - Nom complet en GRAS et CENTRÉ
-   - Coordonnées centrées (adresse | téléphone | email | site web)
-   - Titre du poste en GRAS et centré
-   - Résumé professionnel en paragraphe (SANS titre "PROFESSIONAL SUMMARY")
+     STRUCTURE OBLIGATOIRE À RESPECTER :
 
-2. **SECTIONS** (titre en MAJUSCULES + GRAS + souligné) :
-   - **EXPERIENCE**
-   - **FORMATION** 
-   - **COMPÉTENCES**
-   - **CERTIFICATIONS & RÉALISATIONS**
-   - **INFORMATIONS ADDITIONNELLES**
+     1. **EN-TÊTE** :
+        - Nom complet en GRAS et CENTRÉ
+        - Coordonnées centrées (adresse | téléphone | email | site web)
+        - Titre du poste en GRAS et centré
+        - Résumé professionnel en paragraphe (SANS titre "PROFESSIONAL SUMMARY")
 
-3. **FORMAT EXPÉRIENCE** :
-   • **Titre du Poste** (en gras)
-   Nom de l'entreprise (Dates)
-   - Description avec chiffres et pourcentages
-   - Description avec chiffres et pourcentages
+     2. **SECTIONS** (titre en MAJUSCULES + GRAS + souligné) :
+        - **EXPERIENCE** (ou équivalent dans la langue détectée)
+        - **FORMATION** (ou équivalent dans la langue détectée)
+        - **COMPÉTENCES** (ou équivalent dans la langue détectée)
+        - **CERTIFICATIONS & RÉALISATIONS** (ou équivalent dans la langue détectée)
+        - **INFORMATIONS ADDITIONNELLES** (ou équivalent dans la langue détectée)
 
-4. **FORMAT FORMATION** :
-   • **Nom du Diplôme** (en gras)
-   Institution (Dates)
-   - Spécialisation/détails
+     3. **FORMAT EXPÉRIENCE** :
+        • **Titre du Poste** (en gras)
+        Nom de l'entreprise (Dates)
+        - Description avec chiffres et pourcentages
+        - Description avec chiffres et pourcentages
 
-5. **FORMAT COMPÉTENCES** :
-   • **Catégorie:** (en gras)
-   Liste séparée par virgules
+     4. **FORMAT FORMATION** :
+        • **Nom du Diplôme** (en gras)
+        Institution (Dates)
+        - Spécialisation/détails
 
-6. **STYLE RONALDO PRIME** :
-   - Chiffres partout : "Boosté les ventes de 150%", "Dirigé 12 experts", "Généré 2M€"
-   - Formulations qui "claquent"
-   - Tout en NOIR (pas de bleu)
-   - Espacement cohérent entre sections
+     5. **FORMAT COMPÉTENCES** :
+        • **Catégorie:** (en gras)
+        Liste séparée par virgules
 
-IMPORTANT : Respecte EXACTEMENT cette structure, utilise les bullet points (• et -) comme indiqué."""
+     6. **STYLE PROFESSIONNEL** :
+        - Chiffres partout : "Boosté les ventes de 150%", "Dirigé 12 experts", "Généré 2M€"
+        - Formulations percutantes
+        - Tout en NOIR (pas de bleu)
+        - Espacement cohérent entre sections
+
+     IMPORTANT : Respecte EXACTEMENT cette structure, utilise les bullet points (• et -) comme indiqué."""
                 },
                 {
                     "role": "user",
@@ -863,7 +870,7 @@ IMPORTANT : Respecte EXACTEMENT cette structure, utilise les bullet points (• 
 DESCRIPTION DU POSTE :
 {request.job_description}
 
-RONALDO PRIME, transforme ce CV en chef-d'œuvre ! Fais-le claquer avec ton style légendaire. Chaque phrase doit être un uppercut pour le recruteur !"""
+Optimise ce CV pour qu'il corresponde parfaitement à l'offre d'emploi !"""
                 }
             ],
             "max_tokens": 4000,
