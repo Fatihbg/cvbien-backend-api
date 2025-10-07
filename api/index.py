@@ -66,7 +66,7 @@ class PDFExtractionResponse(BaseModel):
     success: bool
     message: str
 
-app = FastAPI(title="CV Bien API", version="7.4.0-CORS-FINAL")
+app = FastAPI(title="CV Bien API", version="7.5.0-CORS-EMERGENCY")
 
 # Configuration CORS - AVANT TOUTES LES ROUTES
 app.add_middleware(
@@ -179,16 +179,20 @@ def test_cors_options():
 
 @app.get("/cors-test")
 def cors_test():
-    return {"status": "CORS WORKING", "message": "Si tu vois ce message, CORS fonctionne !", "version": "7.2.0"}
+    return {"status": "CORS WORKING", "message": "Si tu vois ce message, CORS fonctionne !", "version": "7.5.0"}
 
 @app.post("/cors-test")
 def cors_test_post():
-    return {"status": "CORS POST WORKING", "message": "POST request CORS fonctionne !", "version": "7.2.0"}
+    return {"status": "CORS POST WORKING", "message": "POST request CORS fonctionne !", "version": "7.5.0"}
+
+@app.get("/emergency-cors")
+def emergency_cors():
+    return {"status": "EMERGENCY CORS", "message": "CORS d'urgence activé !", "version": "7.5.0", "timestamp": "2025-01-06-06:00"}
 
 @app.get("/version")
 def version():
     return {
-        "version": "7.2.0-CORS-URGENT",
+        "version": "7.5.0-CORS-EMERGENCY",
         "status": "Firebase Active with Stripe & OpenAI & CORS" if db and OPENAI_AVAILABLE else "Firebase Inactive",
         "timestamp": "2025-01-06-04:00",
         "webhook_secret": "configured" if os.getenv("STRIPE_WEBHOOK_SECRET") else "missing",

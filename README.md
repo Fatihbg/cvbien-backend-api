@@ -23,3 +23,4 @@ Ce backend est déployé sur Railway.
 # Force backend deploy Tue Oct  7 01:55:01 CEST 2025
 # Force CORS deploy Tue Oct  7 02:10:03 CEST 2025
 # URGENT CORS FIX Tue Oct  7 12:08:08 CEST 2025
+# EMERGENCY CORS FIX Tue Oct  7 12:51:02 CEST 2025
