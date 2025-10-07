@@ -66,7 +66,7 @@ class PDFExtractionResponse(BaseModel):
     success: bool
     message: str
 
-app = FastAPI(title="CV Bien API", version="7.3.0-CORS-CORRECTED")
+app = FastAPI(title="CV Bien API", version="7.4.0-CORS-FINAL")
 
 # Configuration CORS - AVANT TOUTES LES ROUTES
 app.add_middleware(
@@ -775,9 +775,17 @@ async def extract_pdf(request: PDFExtractionRequest):
 async def optimize_cv(request: CVGenerationRequest):
     """Optimiser un CV avec OpenAI"""
     print(f"🔍 DEBUG - Requête reçue: {request}")
-    print(f"🔍 DEBUG - cv_content: {request.cv_content[:100]}...")
-    print(f"🔍 DEBUG - job_description: {request.job_description[:100]}...")
+    print(f"🔍 DEBUG - cv_content: {request.cv_content[:100] if request.cv_content else 'VIDE'}...")
+    print(f"🔍 DEBUG - job_description: {request.job_description[:100] if request.job_description else 'VIDE'}...")
     print(f"🔍 DEBUG - user_id: {request.user_id}")
+    
+    # Validation des champs requis
+    if not request.cv_content or not request.cv_content.strip():
+        raise HTTPException(status_code=422, detail="cv_content est requis et ne peut pas être vide")
+    if not request.job_description or not request.job_description.strip():
+        raise HTTPException(status_code=422, detail="job_description est requis et ne peut pas être vide")
+    if not request.user_id or not request.user_id.strip():
+        raise HTTPException(status_code=422, detail="user_id est requis et ne peut pas être vide")
     
     if not OPENAI_AVAILABLE:
         raise HTTPException(status_code=503, detail="OpenAI SDK non disponible")
