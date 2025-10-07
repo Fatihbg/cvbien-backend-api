@@ -198,6 +198,14 @@ def test_cors():
 def test_cors_options():
     return {"message": "CORS OPTIONS OK ✅", "version": "7.2.0"}
 
+@app.get("/cors-test")
+def cors_test():
+    return {"status": "CORS WORKING", "message": "Si tu vois ce message, CORS fonctionne !", "version": "7.2.0"}
+
+@app.post("/cors-test")
+def cors_test_post():
+    return {"status": "CORS POST WORKING", "message": "POST request CORS fonctionne !", "version": "7.2.0"}
+
 @app.get("/version")
 def version():
     return {
