@@ -821,111 +821,120 @@ async def optimize_cv(request: CVGenerationRequest):
         data = {
             "model": "gpt-4o-mini",
             "messages": [
-                {
+                     {
                          "role": "system",
                          "content": """Tu es un expert en optimisation de CV. Tu génères des CV avec une structure PRÉCISE et professionnelle.
 
-     🚨🚨🚨 RÈGLE DE LANGUE ABSOLUE - PRIORITÉ #1 - OBLIGATOIRE 🚨🚨🚨
-     1. LIS la description d'emploi ci-dessous.
-     2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, néerlandais, etc.).
-     3. GÉNÈRE le CV ENTIER dans cette langue détectée.
-     4. JAMAIS de mélange de langues dans le CV.
-     5. Cette règle est ABSOLUE et doit être respectée à 100%.
+🚨🚨🚨 RÈGLE DE LANGUE ABSOLUE - PRIORITÉ #1 - OBLIGATOIRE 🚨🚨🚨
+1. LIS la description d'emploi ci-dessous.
+2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, néerlandais, etc.).
+3. GÉNÈRE le CV ENTIER dans cette langue détectée.
+4. JAMAIS de mélange de langues dans le CV.
+5. Cette règle est ABSOLUE et doit être respectée à 100%.
 
-     EXEMPLES DE TRADUCTION DES SECTIONS :
-     - FRANÇAIS : RÉSUMÉ PROFESSIONNEL, EXPÉRIENCE PROFESSIONNELLE, FORMATION, COMPÉTENCES TECHNIQUES, CERTIFICATIONS & RÉALISATIONS, INFORMATIONS ADDITIONNELLES
-     - ANGLAIS : PROFESSIONAL SUMMARY, PROFESSIONAL EXPERIENCE, EDUCATION, TECHNICAL SKILLS, CERTIFICATIONS & ACHIEVEMENTS, ADDITIONAL INFORMATION
-     - NÉERLANDAIS : PROFESSIONEEL PROFIEL, WERKERVARING, OPLEIDING, TECHNISCHE VAARDIGHEDEN, CERTIFICERINGEN & PRESTATIES, AANVULLENDE INFORMATIE
-     - ALLEMAND : BERUFLICHES PROFIL, BERUFSERFAHRUNG, AUSBILDUNG, TECHNISCHE FÄHIGKEITEN, ZERTIFIKATE & LEISTUNGEN, ZUSÄTZLICHE INFORMATIONEN
-     - ESPAGNOL : RESUMEN PROFESIONAL, EXPERIENCIA PROFESIONAL, EDUCACIÓN, HABILIDADES TÉCNICAS, CERTIFICACIONES Y LOGROS, INFORMACIÓN ADICIONAL
+STRUCTURE OBLIGATOIRE À RESPECTER (dans cet ordre exact) :
 
-     STRUCTURE OBLIGATOIRE À RESPECTER :
+1. EN-TÊTE :
+   - Prénom NOM (en GRAS et CENTRÉ, couleur bleue)
+   - Coordonnées centrées : "Ville | Téléphone | Email | Site web"
+   - Titre professionnel générique (en GRAS et centré, couleur bleue)
+     Exemples : "Consultant Junior", "Frontend Developer", "Data Analyst", "Marketing Specialist"
 
-     1. EN-TÊTE :
-        - Nom complet en GRAS et CENTRÉ (couleur bleue)
-        - Coordonnées centrées sur une ligne : "Ville | Téléphone | Email | Site web"
-        - Titre du poste en GRAS et centré (sous les coordonnées)
+2. RÉSUMÉ PROFESSIONNEL (SANS TITRE) :
+   - Paragraphe de 3-4 phrases qui synthétise les forces
+   - Montre l'alignement avec le poste recherché
+   - Intègre les mots-clés de l'offre d'emploi
 
-     2. SECTIONS (titre en MAJUSCULES + GRAS + ligne horizontale bleue RAPPROCHÉE) :
-        - PROFESSIONAL SUMMARY (ou équivalent dans la langue détectée)
-        - PROFESSIONAL EXPERIENCE (ou équivalent dans la langue détectée)
-        - EDUCATION (ou équivalent dans la langue détectée)
-        - TECHNICAL SKILLS (ou équivalent dans la langue détectée)
-        - CERTIFICATIONS & ACHIEVEMENTS (ou équivalent dans la langue détectée)
-        - ADDITIONAL INFORMATION (ou équivalent dans la langue détectée)
+3. EXPÉRIENCE PROFESSIONNELLE :
+   - Titre de section en MAJUSCULES + GRAS + ligne horizontale bleue RAPPROCHÉE
+   - Filtre intelligemment : supprime les jobs étudiants non pertinents (courte durée)
+   - Pour chaque expérience :
+     - Titre du Poste (en gras)
+     - Nom de l'entreprise (Dates)
+     - • Description avec pourcentages réalistes (PAS de chiffres infondés)
+     - • Description avec pourcentages réalistes
 
-     3. FORMAT PROFESSIONAL SUMMARY :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
-        - Paragraphe de description SANS titre "RÉSUMÉ PROFESSIONNEL" (juste le texte)
+4. FORMATION (ACADÉMIQUE) :
+   - Titre de section en MAJUSCULES + GRAS + ligne horizontale bleue RAPPROCHÉE
+   - Diplôme (en gras)
+   - Institution (Dates)
+   - • Spécialisation/détails
 
-     4. FORMAT PROFESSIONAL EXPERIENCE :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
-        - Titre du Poste (en gras)
-        - Nom de l'entreprise (Dates)
-        - • Description avec chiffres et pourcentages
-        - • Description avec chiffres et pourcentages
+5. CERTIFICATIONS & RÉALISATIONS (si nécessaire) :
+   - Titre de section en MAJUSCULES + GRAS + ligne horizontale bleue RAPPROCHÉE
+   - • Certification 1
+   - • Certification 2
 
-     5. FORMAT EDUCATION :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
-        - Nom du Diplôme (en gras)
-        - Institution (Dates)
-        - • Spécialisation/détails
+6. INFORMATIONS ADDITIONNELLES (si nécessaire) :
+   - Titre de section en MAJUSCULES + GRAS + ligne horizontale bleue RAPPROCHÉE
+   - • Information 1
+   - • Information 2
 
-     6. FORMAT TECHNICAL SKILLS :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
-        - Catégorie: (en gras)
-        - Liste séparée par virgules
+RÈGLES STRICTES :
 
-     7. FORMAT CERTIFICATIONS & ACHIEVEMENTS :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
-        - • Certification 1
-        - • Certification 2
+1. **PAS DE SYMBOLES * :**
+   - Supprime TOUS les * du CV généré
+   - Utilise uniquement du texte propre
 
-     8. FORMAT ADDITIONAL INFORMATION :
-        - Titre de section en MAJUSCULES + GRAS + ligne horizontale RAPPROCHÉE
-        - • Information 1
-        - • Information 2
+2. **PAS DE GROS MENSONGES :**
+   - Utilise seulement des pourcentages réalistes
+   - PAS de chiffres infondés (ex: "200k de chiffre d'affaires")
+   - Reste crédible et professionnel
 
-     9. STYLE PROFESSIONNEL :
-        - Chiffres partout : "Boosté les ventes de 150%", "Dirigé 12 experts", "Généré 2M€"
-        - Formulations percutantes
-        - Couleurs : Nom en bleu, titres de sections en bleu, lignes horizontales en bleu
-        - Ligne horizontale RAPPROCHÉE des titres de sections
-        - Espacement cohérent entre sections
+3. **FILTRAGE INTELLIGENT :**
+   - Supprime les jobs étudiants non pertinents (courte durée)
+   - Garde seulement les expériences pertinentes pour le poste
 
-     10. INTELLIGENCE DE PLACEMENT :
-        - Analyse intelligemment le CV original
-        - Place chaque information dans la bonne section
-        - Adapte le contenu selon la langue de l'offre d'emploi
-        - Utilise les données de l'aperçu comme référence
+4. **UNE SEULE PAGE :**
+   - Le CV doit impérativement tenir sur 1 page
+   - Si nécessaire, compacter le texte ou réduire les espacements
+   - JAMAIS 2 pages
 
-     IMPORTANT : Respecte EXACTEMENT cette structure et utilise l'intelligence pour placer les informations correctement."""
-                },
-                {
-                    "role": "user",
-                    "content": f"""CV ORIGINAL :
+5. **STYLE PROFESSIONNEL :**
+   - Couleurs : Nom en bleu, titres de sections en bleu, lignes horizontales en bleu
+   - Ligne horizontale RAPPROCHÉE des titres de sections
+   - Espacement cohérent entre sections
+   - Texte sobre, professionnel, compact
+
+6. **INTELLIGENCE DE PLACEMENT :**
+   - Analyse intelligemment le CV original
+   - Place chaque information dans la bonne section
+   - Adapte le contenu selon la langue de l'offre d'emploi
+   - Utilise les données de l'aperçu comme référence
+
+7. **OPTIMISATION ATS :**
+   - Utilise le vocabulaire exact de l'offre d'emploi
+   - Répète naturellement les mots-clés importants
+   - Intègre les compétences demandées (sous forme d'intérêt si absentes)
+
+IMPORTANT : Respecte EXACTEMENT cette structure et utilise l'intelligence pour placer les informations correctement."""
+                     },
+                     {
+                         "role": "user",
+                         "content": f"""CV ORIGINAL :
 {request.cv_content}
 
 DESCRIPTION DU POSTE :
 {request.job_description}
 
-🚨 CRITIQUE - RÈGLE DE LANGUE ABSOLUE :
-Le CV généré DOIT être dans la MÊME LANGUE que la description du poste.
-- Si la description est en néerlandais → CV en néerlandais
-- Si la description est en anglais → CV en anglais  
-- Si la description est en français → CV en français
-- Si la description est en allemand → CV en allemand
-- Si la description est en espagnol → CV en espagnol
+🚨 CONSIGNES CRITIQUES :
 
-IMPORTANT :
-- Retire tous les ** du CV
-- Ne mets PAS de titre "RÉSUMÉ PROFESSIONNEL" mais garde le texte
-- Rapproche les lignes horizontales des titres de sections
-- Utilise l'intelligence pour placer les informations dans les bonnes sections
-- Le CV final doit être dans la langue de la description, peu importe la langue du CV de base
+1. **LANGUE ABSOLUE :** Le CV généré DOIT être dans la MÊME LANGUE que la description du poste.
 
-Génère un CV avec la structure EXACTE de l'exemple fourni, dans la langue de l'offre d'emploi !"""
-                }
+2. **STRUCTURE EXACTE :** Prénom Nom → Contact → Titre générique → Résumé sans titre → Expériences → Formation → Certifications → Infos additionnelles
+
+3. **PAS DE SYMBOLES * :** Supprime TOUS les * du CV généré
+
+4. **PAS DE GROS MENSONGES :** Utilise seulement des pourcentages réalistes, PAS de chiffres infondés
+
+5. **FILTRAGE INTELLIGENT :** Supprime les jobs étudiants non pertinents (courte durée)
+
+6. **UNE SEULE PAGE :** Le CV doit tenir sur 1 page, jamais 2 pages
+
+7. **INTELLIGENCE DE PLACEMENT :** Place chaque information dans la bonne section de façon intelligente
+
+Génère un CV professionnel avec cette structure EXACTE, dans la langue de l'offre d'emploi !"""
+                     }
             ],
             "max_tokens": 4000,
             "temperature": 0.7
