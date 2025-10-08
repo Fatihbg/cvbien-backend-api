@@ -1066,7 +1066,7 @@ Tu dois retourner UNIQUEMENT un JSON valide avec cette structure exacte :
       "description": "Description du programme enrichie"
     }
   ],
-  "skills": "Compétences originales + compétences du poste (séparées par des virgules)",
+  "skills": "Compétences techniques ET comportementales (ex: Python, Leadership, Esprit d'équipe, Communication) séparées par des virgules",
   "certifications": ["Certification 1", "Certification 2"],
   "additionalInfo": "Informations additionnelles enrichies"
 }
@@ -1077,9 +1077,11 @@ RÈGLES D'ENRICHISSEMENT :
 3. **EXPÉRIENCES** : Ajoute des compétences du poste dans les descriptions
 4. **FORMATION** : Mentionne les aspects pertinents pour le poste
 5. **COMPÉTENCES** : Ajoute les compétences du job (basiques si techniques)
-6. **COMPORTEMENT** : Si le job demande "esprit d'équipe", "leadership", etc., ajoute-les
+6. **COMPORTEMENT** : Si le job demande "esprit d'équipe", "leadership", etc., ajoute-les dans "skills"
 7. **TECHNIQUES** : Pour les compétences techniques manquantes, dis "bases en" ou "intérêt pour"
 8. **CRÉDIBILITÉ** : Ne mens jamais, enrichis seulement avec du réaliste
+9. **LIENS** : Préserve TOUS les liens/URLs du CV original (email, site web, LinkedIn, etc.)
+10. **STRUCTURE** : Garde les compétences comportementales dans "skills", pas dans "additionalInfo"
 
 RÈGLES IMPORTANTES :
 - Retourne UNIQUEMENT le JSON, rien d'autre
