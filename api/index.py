@@ -58,6 +58,20 @@ class CVGenerationResponse(BaseModel):
     success: bool
     message: str
 
+class CVParsingRequest(BaseModel):
+    cv_text: str
+
+class CVParsingResponse(BaseModel):
+    name: str
+    contact: str
+    title: str
+    summary: str
+    experience: list
+    education: list
+    skills: str
+    certifications: list
+    additionalInfo: str
+
 class PDFExtractionRequest(BaseModel):
     pdf_base64: str
 
@@ -992,11 +1006,119 @@ Génère un CV professionnel avec cette structure EXACTE, dans la langue de l'of
     except Exception as e:
         print(f"❌ Erreur OpenAI: {e}")
         return CVGenerationResponse(
-            optimized_cv=request.cv_content,  # Retourner le CV original en cas d'erreur
+            optimized_cv=request.cv_content,  # Retourner le CV original en cas d'erreur                                                                        
             ats_score=50,
             success=False,
             message=f"Erreur lors de l'optimisation: {str(e)}"
         )
+
+@app.post("/parse-cv", response_model=CVParsingResponse)
+async def parse_cv(request: CVParsingRequest):
+    """Parser un CV avec l'IA pour extraire les informations structurées"""
+    print(f"🔍 DEBUG - Parsing CV avec IA...")
+    print(f"🔍 DEBUG - cv_text length: {len(request.cv_text) if request.cv_text else 0}")
+    
+    if not OPENAI_AVAILABLE:
+        raise HTTPException(status_code=503, detail="OpenAI SDK non disponible")
+    
+    try:
+        print("🤖 Parsing CV avec OpenAI...")
+        
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=503, detail="OPENAI_API_KEY manquante")
+        
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": """Tu es un expert en parsing de CV. Tu dois extraire les informations d'un CV et les structurer en JSON.
+
+Tu dois retourner UNIQUEMENT un JSON valide avec cette structure exacte :
+
+{
+  "name": "NOM PRÉNOM",
+  "contact": "Ville | Téléphone | Email | Site web",
+  "title": "Titre professionnel",
+  "summary": "Résumé professionnel en paragraphe",
+  "experience": [
+    {
+      "company": "Nom de l'entreprise",
+      "position": "Titre du poste",
+      "period": "Période (ex: Janvier 2023 - Décembre 2024)",
+      "description": ["Description 1", "Description 2"]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Nom de l'institution",
+      "degree": "Diplôme",
+      "period": "Période (ex: 2020-2023)",
+      "description": "Description du programme"
+    }
+  ],
+  "skills": "Compétences séparées par des virgules",
+  "certifications": ["Certification 1", "Certification 2"],
+  "additionalInfo": "Informations additionnelles (langues, etc.)"
+}
+
+RÈGLES IMPORTANTES :
+- Retourne UNIQUEMENT le JSON, rien d'autre
+- Pas de markdown, pas de ```json```
+- Structure exacte respectée
+- Extrais intelligemment les informations du CV
+- Si une section n'existe pas, utilise une chaîne vide ou un tableau vide
+- Nettoye les ** et autres symboles de formatage"""
+                },
+                {
+                    "role": "user",
+                    "content": f"Parse ce CV et retourne le JSON structuré :\n\n{request.cv_text}"
+                }
+            ],
+            "max_tokens": 2000,
+            "temperature": 0.3
+        }
+        
+        response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
+        
+        if response.status_code != 200:
+            raise Exception(f"OpenAI API error: {response.status_code} - {response.text}")
+        
+        response_data = response.json()
+        content = response_data['choices'][0]['message']['content']
+        
+        # Parser le JSON retourné par l'IA
+        try:
+            parsed_data = json.loads(content)
+            
+            return CVParsingResponse(
+                name=parsed_data.get('name', ''),
+                contact=parsed_data.get('contact', ''),
+                title=parsed_data.get('title', ''),
+                summary=parsed_data.get('summary', ''),
+                experience=parsed_data.get('experience', []),
+                education=parsed_data.get('education', []),
+                skills=parsed_data.get('skills', ''),
+                certifications=parsed_data.get('certifications', []),
+                additionalInfo=parsed_data.get('additionalInfo', '')
+            )
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ Erreur parsing JSON: {e}")
+            print(f"❌ Contenu reçu: {content}")
+            raise HTTPException(status_code=500, detail="Erreur parsing JSON de l'IA")
+        
+    except Exception as e:
+        print(f"❌ Erreur parsing CV: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors du parsing: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
