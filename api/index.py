@@ -1084,8 +1084,9 @@ RÈGLES D'ENRICHISSEMENT :
 8. **LANGUES** : Mets les langues sans ** dans additionalInfo, en dernière position
 9. **FORMATION-POSTE** : Pour chaque formation, ajoute une phrase qui montre le lien avec le poste recherché
 10. **CRÉDIBILITÉ** : Ne mens jamais, enrichis seulement avec du réaliste
-11. **LIENS** : Préserve TOUS les liens/URLs du CV original (email, site web, LinkedIn, etc.)
+11. **LIENS** : Préserve TOUS les liens/URLs du CV original (email, site web, LinkedIn, etc.) - si il y en a plusieurs, mets les tous
 12. **CONSERVATION** : Ne supprime JAMAIS de compétences existantes, ajoute seulement
+13. **PAS DE N/A** : Ne mets JAMAIS "N/A" ou "Non spécifié", utilise des valeurs par défaut appropriées
 
 RÈGLES IMPORTANTES :
 - Retourne UNIQUEMENT le JSON, rien d'autre
@@ -1095,7 +1096,9 @@ RÈGLES IMPORTANTES :
 - Garde la crédibilité, pas de mensonges
 - Pour les compétences techniques : analyse la description de poste pour identifier tous les outils, logiciels, technologies mentionnés
 - Pour les formations : ajoute toujours une phrase qui explique pourquoi cette formation est pertinente pour le poste
-- Exemple formation-poste : "Programme orienté gestion de projet et analyse de données, compétences clés pour un Business Analyst" """
+- Exemple formation-poste : "Programme orienté gestion de projet et analyse de données, compétences clés pour un Business Analyst"
+- Pour les langues : si tu vois "bilingue (en/fr)" ou similaire, inclus-le dans additionalInfo
+- Évite absolument "N/A", "Non spécifié", "Non disponible" - utilise des valeurs par défaut appropriées """
                 },
                 {
                     "role": "user",
