@@ -1067,7 +1067,7 @@ Tu dois retourner UNIQUEMENT un JSON valide avec cette structure exacte :
       "description": "Description du programme enrichie avec lien au poste"
     }
   ],
-  "technicalSkills": "Compétences techniques (ex: Python, HTML, CSS, JavaScript, SQL) + compétences du poste séparées par des virgules",
+  "technicalSkills": "Compétences techniques originales + compétences techniques du poste + outils/logiciels du job (ex: Python, HTML, CSS, JavaScript, SQL, Tableau, Power BI, Salesforce, Jira, Confluence) séparées par des virgules",
   "softSkills": "Qualités comportementales attendues (ex: Esprit d'équipe, Créativité, Esprit ouvert, Leadership) séparées par des virgules",
   "certifications": ["Certification 1 (description courte)", "Certification 2 (description courte)"],
   "additionalInfo": "Informations additionnelles (langues, etc.)"
@@ -1078,20 +1078,24 @@ RÈGLES D'ENRICHISSEMENT :
 2. **RÉSUMÉ** : Enrichis avec les compétences demandées dans le job
 3. **EXPÉRIENCES** : Ajoute des compétences du poste dans les descriptions
 4. **FORMATION** : Enrichis les descriptions pour montrer le lien avec le poste recherché
-5. **TECHNICALSKILLS** : Compétences techniques originales + compétences techniques du poste (basiques si manquantes)
+5. **TECHNICALSKILLS** : Compétences techniques originales + compétences techniques du poste (basiques si manquantes) + outils/logiciels mentionnés dans le job
 6. **SOFTSKILLS** : Qualités comportementales attendues (esprit d'équipe, créativité, esprit ouvert, leadership, etc.)
 7. **CERTIFICATIONS** : UNIQUEMENT celles qui existent dans le CV original, n'invente RIEN, ajoute une description courte entre parenthèses
-8. **LANGUES** : Mets les langues en gras dans additionalInfo, en dernière position
-9. **CRÉDIBILITÉ** : Ne mens jamais, enrichis seulement avec du réaliste
-10. **LIENS** : Préserve TOUS les liens/URLs du CV original (email, site web, LinkedIn, etc.)
-11. **CONSERVATION** : Ne supprime JAMAIS de compétences existantes, ajoute seulement
+8. **LANGUES** : Mets les langues sans ** dans additionalInfo, en dernière position
+9. **FORMATION-POSTE** : Pour chaque formation, ajoute une phrase qui montre le lien avec le poste recherché
+10. **CRÉDIBILITÉ** : Ne mens jamais, enrichis seulement avec du réaliste
+11. **LIENS** : Préserve TOUS les liens/URLs du CV original (email, site web, LinkedIn, etc.)
+12. **CONSERVATION** : Ne supprime JAMAIS de compétences existantes, ajoute seulement
 
 RÈGLES IMPORTANTES :
 - Retourne UNIQUEMENT le JSON, rien d'autre
 - Pas de markdown, pas de ```json```
 - Structure exacte respectée
 - Enrichis intelligemment selon le poste
-- Garde la crédibilité, pas de mensonges"""
+- Garde la crédibilité, pas de mensonges
+- Pour les compétences techniques : analyse la description de poste pour identifier tous les outils, logiciels, technologies mentionnés
+- Pour les formations : ajoute toujours une phrase qui explique pourquoi cette formation est pertinente pour le poste
+- Exemple formation-poste : "Programme orienté gestion de projet et analyse de données, compétences clés pour un Business Analyst" """
                 },
                 {
                     "role": "user",
