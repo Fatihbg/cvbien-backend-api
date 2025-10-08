@@ -60,6 +60,7 @@ class CVGenerationResponse(BaseModel):
 
 class CVParsingRequest(BaseModel):
     cv_text: str
+    job_description: str = ""
 
 class CVParsingResponse(BaseModel):
     name: str
@@ -1040,21 +1041,21 @@ async def parse_cv(request: CVParsingRequest):
             "messages": [
                 {
                     "role": "system",
-                    "content": """Tu es un expert en parsing de CV. Tu dois extraire les informations d'un CV et les structurer en JSON.
+                    "content": """Tu es un expert en parsing et enrichissement de CV. Tu dois extraire les informations d'un CV et les enrichir intelligemment selon le poste recherché.
 
 Tu dois retourner UNIQUEMENT un JSON valide avec cette structure exacte :
 
 {
   "name": "NOM PRÉNOM",
   "contact": "Ville | Téléphone | Email | Site web",
-  "title": "Titre professionnel",
-  "summary": "Résumé professionnel en paragraphe",
+  "title": "Titre professionnel adapté au poste",
+  "summary": "Résumé professionnel enrichi avec les compétences du poste",
   "experience": [
     {
       "company": "Nom de l'entreprise",
       "position": "Titre du poste",
       "period": "Période (ex: Janvier 2023 - Décembre 2024)",
-      "description": ["Description 1", "Description 2"]
+      "description": ["Description enrichie 1", "Description enrichie 2"]
     }
   ],
   "education": [
@@ -1062,25 +1063,34 @@ Tu dois retourner UNIQUEMENT un JSON valide avec cette structure exacte :
       "institution": "Nom de l'institution",
       "degree": "Diplôme",
       "period": "Période (ex: 2020-2023)",
-      "description": "Description du programme"
+      "description": "Description du programme enrichie"
     }
   ],
-  "skills": "Compétences séparées par des virgules",
+  "skills": "Compétences originales + compétences du poste (séparées par des virgules)",
   "certifications": ["Certification 1", "Certification 2"],
-  "additionalInfo": "Informations additionnelles (langues, etc.)"
+  "additionalInfo": "Informations additionnelles enrichies"
 }
+
+RÈGLES D'ENRICHISSEMENT :
+1. **TITRE** : Adapte le titre professionnel au poste recherché
+2. **RÉSUMÉ** : Enrichis avec les compétences demandées dans le job
+3. **EXPÉRIENCES** : Ajoute des compétences du poste dans les descriptions
+4. **FORMATION** : Mentionne les aspects pertinents pour le poste
+5. **COMPÉTENCES** : Ajoute les compétences du job (basiques si techniques)
+6. **COMPORTEMENT** : Si le job demande "esprit d'équipe", "leadership", etc., ajoute-les
+7. **TECHNIQUES** : Pour les compétences techniques manquantes, dis "bases en" ou "intérêt pour"
+8. **CRÉDIBILITÉ** : Ne mens jamais, enrichis seulement avec du réaliste
 
 RÈGLES IMPORTANTES :
 - Retourne UNIQUEMENT le JSON, rien d'autre
 - Pas de markdown, pas de ```json```
 - Structure exacte respectée
-- Extrais intelligemment les informations du CV
-- Si une section n'existe pas, utilise une chaîne vide ou un tableau vide
-- Nettoye les ** et autres symboles de formatage"""
+- Enrichis intelligemment selon le poste
+- Garde la crédibilité, pas de mensonges"""
                 },
                 {
                     "role": "user",
-                    "content": f"Parse ce CV et retourne le JSON structuré :\n\n{request.cv_text}"
+                    "content": f"Parse ce CV et enrichis-le selon ce poste, puis retourne le JSON structuré :\n\nCV :\n{request.cv_text}\n\nPOSTE RECHERCHÉ :\n{request.job_description if request.job_description else 'Pas de description de poste fournie'}"
                 }
             ],
             "max_tokens": 2000,
