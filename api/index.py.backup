@@ -51,7 +51,6 @@ class CVGenerationRequest(BaseModel):
     cv_content: str
     job_description: str
     user_id: str
-    target_language: str = "french"  # Langue de l'offre d'emploi
 
 class CVGenerationResponse(BaseModel):
     optimized_cv: str
@@ -807,7 +806,6 @@ async def optimize_cv(request: CVGenerationRequest):
     print(f"🔍 DEBUG - cv_content: {request.cv_content[:100] if request.cv_content else 'VIDE'}...")
     print(f"🔍 DEBUG - job_description: {request.job_description[:100] if request.job_description else 'VIDE'}...")
     print(f"🔍 DEBUG - user_id: {request.user_id}")
-    print(f"🌍 DEBUG - target_language: {request.target_language}")
     
     # Validation des champs requis
     if not request.cv_content or not request.cv_content.strip():
@@ -841,13 +839,14 @@ async def optimize_cv(request: CVGenerationRequest):
             "messages": [
                      {
                          "role": "system",
-                         "content": f"""Tu es un expert en optimisation de CV. Tu génères des CV avec une structure PRÉCISE et professionnelle.
+                         "content": """Tu es un expert en optimisation de CV. Tu génères des CV avec une structure PRÉCISE et professionnelle.
 
 🚨🚨🚨 RÈGLE DE LANGUE ABSOLUE - PRIORITÉ #1 - OBLIGATOIRE 🚨🚨🚨
-1. La langue cible est : {request.target_language.upper()}
-2. GÉNÈRE le CV ENTIER dans cette langue ({request.target_language}).
-3. JAMAIS de mélange de langues dans le CV.
-4. Cette règle est ABSOLUE et doit être respectée à 100%.
+1. LIS la description d'emploi ci-dessous.
+2. IDENTIFIE sa langue (français, anglais, espagnol, allemand, italien, néerlandais, etc.).
+3. GÉNÈRE le CV ENTIER dans cette langue détectée.
+4. JAMAIS de mélange de langues dans le CV.
+5. Cette règle est ABSOLUE et doit être respectée à 100%.
 
 STRUCTURE OBLIGATOIRE À RESPECTER (dans cet ordre exact) :
 
@@ -946,7 +945,7 @@ DESCRIPTION DU POSTE :
 
 🚨 CONSIGNES CRITIQUES :
 
-1. **LANGUE ABSOLUE :** Le CV généré DOIT être en {request.target_language.upper()} (langue de l'offre d'emploi).
+1. **LANGUE ABSOLUE :** Le CV généré DOIT être dans la MÊME LANGUE que la description du poste.
 
 2. **STRUCTURE EXACTE :** Prénom Nom → Contact → Titre générique → Résumé sans titre → Expériences → Formation → Certifications → Infos additionnelles
 
