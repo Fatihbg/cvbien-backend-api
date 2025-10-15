@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import JSONResponse
 import uvicorn
 import os
 import json
 from datetime import datetime
 from typing import Optional
+import openai
 
 # Firebase imports
 try:
@@ -194,8 +196,7 @@ async def get_user_profile(current_user: dict = Depends(verify_token)):
 @app.post("/optimize-cv")
 async def optimize_cv(request: dict):
     """
-    Endpoint simple pour générer un CV optimisé.
-    Garde la même logique qu'avant mais avec l'endpoint /optimize-cv.
+    Endpoint pour générer un CV optimisé avec les nouvelles instructions détaillées.
     """
     try:
         cv_content = request.get("cv_content", "")
@@ -204,15 +205,149 @@ async def optimize_cv(request: dict):
         instructions = request.get("instructions", "")
         
         print(f"🚀 Requête CV - Langue: {target_language}")
+        print(f"📄 CV Content length: {len(cv_content)}")
+        print(f"📋 Job Description length: {len(job_description)}")
         
-        # Pour l'instant, retourner le CV tel quel (même logique qu'avant)
-        # On peut améliorer plus tard si nécessaire
-        return JSONResponse({
-            "success": True,
-            "optimized_cv": cv_content,
-            "ats_score": 85,
-            "message": "CV traité avec succès"
-        })
+        # Instructions détaillées pour l'IA
+        detailed_instructions = """
+Instructions de Traitement du Modèle (Pour l'IA): 
+Objectif Principal : Adapter, reformuler et enrichir le CV actuel afin qu'il corresponde parfaitement à 100% aux exigences et au langage de l'offre d'emploi cible, positionnant le candidat comme le profil idéal.
+
+Analyse Approfondie :
+- Analyser le [Description d'Emploi Cible] pour identifier tous les mots-clés, les compétences techniques (hard skills), les qualités interpersonnelles (soft skills), les responsabilités et les exigences spécifiques (outils, méthodologies, certifications).
+- Analyser le [CV Actuel Complet] pour extraire toutes les informations pertinentes (expériences, formations, compétences, etc.).
+- S'assurer que 100% des informations du [CV Actuel Complet] sont conservées dans le nouveau CV, uniquement reformulées si nécessaire.
+
+Harmonisation et Reformulation (Stratégie d'Adaptation) :
+- Expériences Professionnelles : Pour chaque poste, réécrire les descriptions de responsabilités et d'accomplissements. Utiliser le langage et les mots-clés exacts trouvés dans l'offre d'emploi. Mettre l'accent sur les résultats (si possible, quantification) qui sont directement pertinents pour les fonctions listées dans l'offre cible. Chaque point doit sembler être une préparation directe au poste visé.
+- Éducation/Formation : Reformuler les descriptions de cours, projets ou mémoires pour souligner leur lien avec le domaine ou les technologies mentionnées dans l'offre d'emploi.
+
+Compétences Techniques (Hard Skills) :
+- Intégrer tous les outils/technologies mentionnés dans l'offre.
+- Règle du "Mensonge Blanc" : Si une compétence technique est demandée (ex. Python) et est absente du CV initial, l'ajouter avec une mention d'un niveau d'expertise de base ou intermédiaire (ex. "Bases solides en Python pour l'analyse de données" ou "Connaissance fonctionnelle de..."). NE PAS inventer un niveau Expert si l'information n'est pas présente.
+
+Soft Skills : Intégrer tous les soft skills mentionnés dans l'offre d'emploi (ex. "Proactif", "Esprit d'équipe", "Résolution de problèmes complexes") dans la section Compétences sans justification supplémentaire.
+
+Rédaction des Éléments Clés :
+- Résumé Professionnel (Objectif) : Rédiger un paragraphe de 3-4 lignes percutant. Il doit immédiatement positionner le candidat comme la personne idéale en citant directement les exigences et la culture de l'entreprise (si elle est mentionnée) et en mentionnant les années d'expérience pertinentes et les compétences clés demandées dans l'offre.
+
+Structure et Mise en Forme (Pour l'Optimisation ATS) :
+Le nouveau CV doit respecter la structure exacte suivante pour faciliter la lecture des systèmes de suivi des candidatures (ATS) et des recruteurs :
+
+A. En-tête (Centré) :
+- Prénom NOM (Taille de police plus grande)
+- Informations de contact (Téléphone | E-mail | Lien LinkedIn/Portfolio) (Taille de police plus petite, centré)
+
+B. Résumé Professionnel (Centré) :
+- Le paragraphe rédigé selon l'instruction ci-dessus.
+
+C. Expériences Professionnelles (Titre Alignement à Gauche) :
+- Titre : EXPÉRIENCES PROFESSIONNELLES
+- Format : [Intitulé du Poste] | [Nom de l'Entreprise] | [Dates]
+- Liste à puces des responsabilités et réalisations reformulées.
+
+D. Éducation et Formations (Titre Alignement à Gauche) :
+- Titre : ÉDUCATION ET FORMATIONS
+- Format : [Diplôme] | [Établissement] | [Dates]
+- Liste des formations reformulées.
+
+E. Compétences (Titre Alignement à Gauche) :
+- Titre : COMPÉTENCES
+- Sous-sections claires :
+  - Hard Skills : Liste des technologies, outils, et méthodologies (y compris celles ajoutées via la règle du "Mensonge Blanc").
+  - Soft Skills : Liste de tous les soft skills demandés dans l'offre.
+  - Certifications/Projets : Toutes les certifications ou projets personnels/académiques mentionnés dans le CV initial.
+  - Langues : Niveaux de langue.
+
+Livrable : Le nouveau CV rédigé intégralement, structuré selon le format A-B-C-D-E, prêt à être copié/collé dans un document de mise en page. Ne pas fournir d'explication, seulement le CV final.
+        """
+        
+        # Configuration OpenAI
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        
+        if not openai.api_key:
+            print("⚠️ OpenAI API Key non configurée, retour du CV original")
+            return JSONResponse({
+                "success": True,
+                "optimized_cv": cv_content,
+                "ats_score": 75,
+                "message": "CV retourné sans optimisation (OpenAI non configuré)"
+            })
+        
+        # Prompts selon la langue
+        language_prompts = {
+            "french": f"""
+{detailed_instructions}
+
+CV ACTUEL COMPLET:
+{cv_content}
+
+DESCRIPTION D'EMPLOI CIBLE:
+{job_description}
+
+Génère le nouveau CV optimisé selon les instructions ci-dessus, en français.
+""",
+            "english": f"""
+{detailed_instructions}
+
+CURRENT COMPLETE CV:
+{cv_content}
+
+TARGET JOB DESCRIPTION:
+{job_description}
+
+Generate the optimized CV according to the instructions above, in English.
+""",
+            "dutch": f"""
+{detailed_instructions}
+
+HUIDIGE VOLLEDIGE CV:
+{cv_content}
+
+DOELSTELLING FUNCTIEBESCHRIJVING:
+{job_description}
+
+Genereer de geoptimaliseerde CV volgens de bovenstaande instructies, in het Nederlands.
+"""
+        }
+        
+        prompt = language_prompts.get(target_language, language_prompts["french"])
+        
+        try:
+            # Appel à l'API OpenAI
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "Tu es un expert en recrutement et optimisation de CV. Tu adaptes parfaitement les CV aux offres d'emploi en respectant scrupuleusement toutes les instructions fournies."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=4000,
+                temperature=0.7
+            )
+            
+            optimized_cv = response.choices[0].message.content.strip()
+            
+            # Calculer un score ATS réaliste
+            ats_score = calculate_ats_score(optimized_cv, job_description)
+            
+            print(f"✅ CV optimisé généré - Score ATS: {ats_score}")
+            
+            return JSONResponse({
+                "success": True,
+                "optimized_cv": optimized_cv,
+                "ats_score": ats_score,
+                "message": "CV optimisé avec succès selon les nouvelles instructions"
+            })
+            
+        except Exception as openai_error:
+            print(f"❌ Erreur OpenAI: {openai_error}")
+            # Fallback: retourner le CV original
+            return JSONResponse({
+                "success": True,
+                "optimized_cv": cv_content,
+                "ats_score": 75,
+                "message": "CV retourné sans optimisation (erreur OpenAI)"
+            })
         
     except Exception as e:
         print(f"❌ Erreur optimisation CV: {e}")
@@ -223,6 +358,53 @@ async def optimize_cv(request: dict):
                 "message": f"Erreur: {str(e)}"
             }
         )
+
+def calculate_ats_score(cv_content: str, job_description: str) -> int:
+    """Calculer un score ATS réaliste basé sur la correspondance des mots-clés"""
+    try:
+        # Extraire les mots-clés de l'offre d'emploi
+        job_keywords = set()
+        job_lower = job_description.lower()
+        
+        # Mots-clés techniques communs
+        tech_keywords = ['python', 'javascript', 'react', 'node', 'sql', 'excel', 'powerpoint', 'leadership', 'management', 'communication', 'project', 'team', 'analysis', 'data', 'development', 'design']
+        
+        for keyword in tech_keywords:
+            if keyword in job_lower:
+                job_keywords.add(keyword)
+        
+        # Extraire les mots-clés du CV
+        cv_keywords = set()
+        cv_lower = cv_content.lower()
+        
+        for keyword in tech_keywords:
+            if keyword in cv_lower:
+                cv_keywords.add(keyword)
+        
+        # Calculer le score de correspondance
+        if len(job_keywords) == 0:
+            return 80  # Score par défaut si pas de mots-clés détectés
+        
+        match_count = len(job_keywords.intersection(cv_keywords))
+        match_percentage = (match_count / len(job_keywords)) * 100
+        
+        # Bonus pour la structure
+        structure_bonus = 0
+        if 'experience' in cv_lower or 'expérience' in cv_lower:
+            structure_bonus += 10
+        if 'education' in cv_lower or 'formation' in cv_lower:
+            structure_bonus += 10
+        if 'skills' in cv_lower or 'compétences' in cv_lower:
+            structure_bonus += 10
+        if '@' in cv_content:  # Email
+            structure_bonus += 5
+        
+        final_score = min(100, match_percentage + structure_bonus)
+        return max(70, int(final_score))  # Score minimum de 70
+        
+    except Exception as e:
+        print(f"❌ Erreur calcul score ATS: {e}")
+        return 80  # Score par défaut
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
