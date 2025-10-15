@@ -224,7 +224,7 @@ Harmonisation et Reformulation (Stratégie d'Adaptation) :
 
 Compétences Techniques (Hard Skills) :
 - Intégrer tous les outils/technologies mentionnés dans l'offre.
-- Règle du "Mensonge Blanc" : Si une compétence technique est demandée (ex. Python) et est absente du CV initial, l'ajouter avec une mention d'un niveau d'expertise de base ou intermédiaire (ex. "Bases solides en Python pour l'analyse de données" ou "Connaissance fonctionnelle de..."). NE PAS inventer un niveau Expert si l'information n'est pas présente.
+- Règle du "Mensonge Blanc" : Si une compétence technique est demandée (ex. Python) et est absente du CV initial, l'ajouter avec une mention d'un niveau d'expertise de base ou intermédiaire (ex. "Bases solides en Python pour l'analyse de données" ou "Connaissance fonctionnelle de..."). NE PASinventer un niveau Expert si l'information n'est pas présente.
 
 Soft Skills : Intégrer tous les soft skills mentionnés dans l'offre d'emploi (ex. "Proactif", "Esprit d'équipe", "Résolution de problèmes complexes") dans la section Compétences sans justification supplémentaire.
 
