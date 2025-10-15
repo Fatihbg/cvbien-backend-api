@@ -259,6 +259,10 @@ E. Compétences (Titre Alignement à Gauche) :
   - Certifications/Projets : Toutes les certifications ou projets personnels/académiques mentionnés dans le CV initial. Pour chaque certification, ajouter une phrase explicative courte (ex: "Python Programming Certification (Certification professionnelle en programmation Python)").
   - Langues : Niveaux de langue.
 
+F. Soft Skills (Titre Alignement à Gauche) :
+- Titre : SOFT SKILLS
+- Lister explicitement tous les soft skills demandés dans l'offre d'emploi avec des puces (ex: "• Leadership", "• Teamwork", "• Proactive", "• Analytical skills").
+
 Livrable : Le nouveau CV rédigé intégralement, structuré selon le format A-B-C-D-E, prêt à être copié/collé dans un document de mise en page. Ne pas fournir d'explication, seulement le CV final.
         """
         
