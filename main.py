@@ -256,7 +256,7 @@ E. Compétences (Titre Alignement à Gauche) :
 - Sous-sections claires :
   - Hard Skills : Liste des technologies, outils, et méthodologies (y compris celles ajoutées via la règle du "Mensonge Blanc").
   - Soft Skills : Liste de tous les soft skills demandés dans l'offre.
-  - Certifications/Projets : Toutes les certifications ou projets personnels/académiques mentionnés dans le CV initial.
+  - Certifications/Projets : Toutes les certifications ou projets personnels/académiques mentionnés dans le CV initial. Pour chaque certification, ajouter une phrase explicative courte (ex: "Python Programming Certification (Certification professionnelle en programmation Python)").
   - Langues : Niveaux de langue.
 
 Livrable : Le nouveau CV rédigé intégralement, structuré selon le format A-B-C-D-E, prêt à être copié/collé dans un document de mise en page. Ne pas fournir d'explication, seulement le CV final.
