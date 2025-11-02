@@ -145,7 +145,7 @@ async def validate_firebase_token(token_data: dict):
             user_data = {
                 "email": decoded_token.get("email"),
                 "name": decoded_token.get("name", ""),
-                "credits": 5,  # Crédits gratuits
+                "credits": 0,  # Nouveau compte sans crédits
                 "created_at": datetime.now().isoformat()
             }
             db.collection('users').document(uid).set(user_data)
