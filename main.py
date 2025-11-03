@@ -27,7 +27,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173", 
         "https://cvbien4.vercel.app",
-        "https://cvbien.vercel.app"
+        "https://cvbien.vercel.app",
+        "https://cvbien.dev"
     ],
     allow_credentials=True,
     allow_methods=["*"],
