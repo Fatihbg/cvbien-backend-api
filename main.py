@@ -18,6 +18,15 @@ except ImportError:
     FIREBASE_AVAILABLE = False
     print("⚠️ Firebase Admin SDK non installé")
 
+# Stripe import
+try:
+    import stripe
+    STRIPE_AVAILABLE = True
+    print("✅ Stripe importé avec succès")
+except ImportError:
+    STRIPE_AVAILABLE = False
+    print("⚠️ Stripe non installé")
+
 app = FastAPI(title="CV Bien API", version="6.1.0")
 
 # Configuration CORS
@@ -410,6 +419,151 @@ def calculate_ats_score(cv_content: str, job_description: str) -> int:
     except Exception as e:
         print(f"❌ Erreur calcul score ATS: {e}")
         return 80  # Score par défaut
+
+# --- Endpoint Stripe ---
+FRONTEND_URL = "https://cvbien.dev"
+
+@app.post("/api/payments/create-payment-intent")
+async def create_payment_intent(request: dict, current_user: dict = Depends(verify_token)):
+    """Créer une intention de paiement Stripe"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        if not STRIPE_AVAILABLE:
+            raise HTTPException(status_code=500, detail="Stripe non disponible")
+        
+        # Configuration Stripe
+        stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+        if not stripe_secret_key:
+            print("❌ STRIPE_SECRET_KEY manquante")
+            raise HTTPException(status_code=500, detail="Configuration Stripe manquante")
+        
+        # Initialiser Stripe avec la clé
+        stripe.api_key = stripe_secret_key
+        print(f"✅ Stripe configuré avec clé: {stripe_secret_key[:10]}...")
+        
+        amount = request.get("amount", 1)  # En euros
+        if amount == 1:
+            credits = 5  # 1€ = 5 crédits
+        elif amount == 5:
+            credits = 100  # 5€ = 100 crédits
+        else:
+            credits = amount * 5  # Par défaut
+        
+        # Créer une session Stripe via API REST
+        print("🔧 Création session Stripe via API REST...")
+        
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {stripe_secret_key}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        
+        data = {
+            'payment_method_types[]': 'card',
+            'line_items[0][price_data][currency]': 'eur',
+            'line_items[0][price_data][product_data][name]': f'{credits} crédits CV Bien',
+            'line_items[0][price_data][unit_amount]': str(amount * 100),
+            'line_items[0][quantity]': '1',
+            'mode': 'payment',
+            'success_url': f'{FRONTEND_URL}/?payment=success&credits={credits}&user_id={current_user["uid"]}&session_id={{CHECKOUT_SESSION_ID}}',
+            'cancel_url': f'{FRONTEND_URL}/?payment=cancel',
+            'metadata[user_id]': current_user['uid'],
+            'metadata[credits]': str(credits)
+        }
+        
+        response = requests.post('https://api.stripe.com/v1/checkout/sessions', headers=headers, data=data)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur Stripe API: {response.status_code} - {response.text}")
+            raise HTTPException(status_code=500, detail=f"Erreur Stripe API: {response.text}")
+        
+        session = response.json()
+        print(f"✅ Session créée: {session.get('id')}")
+        
+        # Vérifier que l'URL existe
+        if 'url' not in session:
+            print(f"❌ Pas d'URL dans la session: {session}")
+            raise HTTPException(status_code=500, detail="URL de checkout non trouvée dans la réponse Stripe")
+        
+        return {
+            "success": True,
+            "checkout_url": session['url'],
+            "session_id": session['id']
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur création paiement: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur paiement: {str(e)}")
+
+@app.post("/api/payments/confirm-payment-stripe")
+async def confirm_payment_stripe(request: dict):
+    """Confirmer un paiement en utilisant les métadonnées Stripe"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Firebase non disponible")
+    
+    try:
+        session_id = request.get("session_id")
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id manquant")
+        
+        print(f"🔧 DEBUG confirm-payment-stripe: session_id={session_id}")
+        
+        # Récupérer la session Stripe pour obtenir les métadonnées
+        import requests
+        stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+        
+        headers = {
+            'Authorization': f'Bearer {stripe_secret_key}',
+        }
+        
+        response = requests.get(f'https://api.stripe.com/v1/checkout/sessions/{session_id}', headers=headers)
+        
+        if response.status_code != 200:
+            print(f"❌ Erreur récupération session Stripe: {response.status_code} - {response.text}")
+            raise HTTPException(status_code=500, detail=f"Erreur Stripe: {response.text}")
+        
+        session = response.json()
+        metadata = session.get('metadata', {})
+        user_id = metadata.get('user_id')
+        credits = int(metadata.get('credits', 0))
+        
+        print(f"🔧 DEBUG: user_id={user_id}, credits={credits}")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id manquant dans les métadonnées")
+        
+        # Récupérer l'utilisateur
+        user_doc = db.collection('users').document(user_id).get()
+        print(f"🔧 DEBUG: user_doc.exists={user_doc.exists}")
+        
+        if not user_doc.exists:
+            print(f"❌ Utilisateur {user_id} non trouvé dans Firestore")
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+        user_data = user_doc.to_dict()
+        current_credits = user_data.get("credits", 0)
+        new_credits = current_credits + credits
+        
+        print(f"🔧 DEBUG: current_credits={current_credits}, new_credits={new_credits}")
+        
+        # Mettre à jour les crédits
+        db.collection('users').document(user_id).update({"credits": new_credits})
+        
+        print(f"✅ Crédits mis à jour via Stripe: {credits} ajoutés, total: {new_credits}")
+        
+        return {
+            "success": True,
+            "credits": new_credits,
+            "added": credits,
+            "method": "stripe_metadata"
+        }
+        
+    except Exception as e:
+        print(f"❌ Erreur confirmation paiement Stripe: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur confirmation: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
