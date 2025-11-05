@@ -104,7 +104,25 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Route OPTIONS explicite pour gérer les preflight requests
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str, request: Request):
+    """Handler pour les requêtes OPTIONS (preflight)"""
+    origin = request.headers.get("origin")
+    if origin in ALLOWED_ORIGINS:
+        return Response(
+            content="",
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+            }
+        )
+    return Response(content="")
 
 # Configuration Firebase
 db = None
