@@ -720,8 +720,21 @@ async def stripe_webhook(request: Request):
         webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
         
         if not webhook_secret:
-            print("⚠️ STRIPE_WEBHOOK_SECRET non configuré")
-            return {"status": "error", "message": "Webhook secret non configuré"}
+            print("⚠️ STRIPE_WEBHOOK_SECRET non configuré - webhook ignoré")
+            # Retourner 200 pour éviter que Stripe réessaie indéfiniment
+            return Response(
+                content='{"status": "skipped", "message": "Webhook secret non configuré"}',
+                status_code=200,
+                headers={"Content-Type": "application/json"}
+            )
+        
+        if not stripe_secret_key:
+            print("⚠️ STRIPE_SECRET_KEY non configuré - webhook ignoré")
+            return Response(
+                content='{"status": "skipped", "message": "Stripe secret key non configuré"}',
+                status_code=200,
+                headers={"Content-Type": "application/json"}
+            )
         
         print(f"✅ STRIPE_WEBHOOK_SECRET trouvé: {webhook_secret[:10]}...")
         
