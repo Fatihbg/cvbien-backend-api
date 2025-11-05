@@ -648,6 +648,21 @@ async def confirm_payment_stripe(request: dict):
         
         print(f"🔧 DEBUG confirm-payment-stripe: session_id={session_id}")
         
+        # Vérifier si cette session a déjà été traitée
+        processed_sessions_ref = db.collection('processed_sessions').document(session_id)
+        processed_session = processed_sessions_ref.get()
+        
+        if processed_session.exists:
+            processed_data = processed_session.to_dict()
+            print(f"⚠️ Session {session_id} déjà traitée - crédits déjà ajoutés")
+            return {
+                "success": True,
+                "credits": processed_data.get("final_credits"),
+                "added": processed_data.get("credits_added"),
+                "method": "already_processed",
+                "message": "Paiement déjà confirmé"
+            }
+        
         # Récupérer la session Stripe pour obtenir les métadonnées
         import requests
         stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
@@ -663,6 +678,12 @@ async def confirm_payment_stripe(request: dict):
             raise HTTPException(status_code=500, detail=f"Erreur Stripe: {response.text}")
         
         session = response.json()
+        
+        # Vérifier que le paiement est bien complété
+        if session.get('payment_status') != 'paid':
+            print(f"⚠️ Session {session_id} pas encore payée: {session.get('payment_status')}")
+            raise HTTPException(status_code=400, detail="Paiement non complété")
+        
         metadata = session.get('metadata', {})
         user_id = metadata.get('user_id')
         credits = int(metadata.get('credits', 0))
@@ -688,6 +709,16 @@ async def confirm_payment_stripe(request: dict):
         
         # Mettre à jour les crédits
         db.collection('users').document(user_id).update({"credits": new_credits})
+        
+        # Marquer cette session comme traitée
+        processed_sessions_ref.set({
+            "session_id": session_id,
+            "user_id": user_id,
+            "credits_added": credits,
+            "final_credits": new_credits,
+            "processed_at": firestore.SERVER_TIMESTAMP,
+            "method": "confirm_payment_stripe"
+        })
         
         print(f"✅ Crédits mis à jour via Stripe: {credits} ajoutés, total: {new_credits}")
         
@@ -760,13 +791,28 @@ async def stripe_webhook(request: Request):
         # Traiter l'événement
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
+            session_id = session.get('id')
             metadata = session.get('metadata', {})
             user_id = metadata.get('user_id')
             credits = int(metadata.get('credits', 0))
             
-            print(f"🎉 Paiement confirmé via webhook: user_id={user_id}, credits={credits}")
+            print(f"🎉 Paiement confirmé via webhook: session_id={session_id}, user_id={user_id}, credits={credits}")
             
-            if user_id and credits > 0:
+            if user_id and credits > 0 and session_id:
+                # Vérifier si cette session a déjà été traitée
+                processed_sessions_ref = db.collection('processed_sessions').document(session_id)
+                processed_session = processed_sessions_ref.get()
+                
+                if processed_session.exists:
+                    processed_data = processed_session.to_dict()
+                    print(f"⚠️ Session {session_id} déjà traitée via webhook - crédits déjà ajoutés")
+                    return {
+                        "status": "success",
+                        "credits_added": processed_data.get("credits_added"),
+                        "total_credits": processed_data.get("final_credits"),
+                        "message": "Paiement déjà confirmé"
+                    }
+                
                 # Récupérer l'utilisateur
                 user_doc = db.collection('users').document(user_id).get()
                 
@@ -778,6 +824,16 @@ async def stripe_webhook(request: Request):
                     # Mettre à jour les crédits
                     db.collection('users').document(user_id).update({"credits": new_credits})
                     
+                    # Marquer cette session comme traitée
+                    processed_sessions_ref.set({
+                        "session_id": session_id,
+                        "user_id": user_id,
+                        "credits_added": credits,
+                        "final_credits": new_credits,
+                        "processed_at": firestore.SERVER_TIMESTAMP,
+                        "method": "webhook"
+                    })
+                    
                     print(f"✅ Webhook: {credits} crédits ajoutés à {user_id}, total: {new_credits}")
                     
                     return {"status": "success", "credits_added": credits, "total_credits": new_credits}
@@ -785,7 +841,7 @@ async def stripe_webhook(request: Request):
                     print(f"❌ Utilisateur {user_id} non trouvé dans Firestore")
                     return {"status": "error", "message": "Utilisateur non trouvé"}
             else:
-                print(f"❌ Métadonnées manquantes: user_id={user_id}, credits={credits}")
+                print(f"❌ Métadonnées manquantes: user_id={user_id}, credits={credits}, session_id={session_id}")
                 return {"status": "error", "message": "Métadonnées manquantes"}
         
         return {"status": "success", "message": "Webhook reçu"}
