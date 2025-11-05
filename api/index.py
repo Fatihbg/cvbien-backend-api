@@ -719,8 +719,9 @@ async def stripe_webhook(request: Request):
         stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
         webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
         
-        if not webhook_secret:
-            print("⚠️ STRIPE_WEBHOOK_SECRET non configuré - webhook ignoré")
+        # Vérifications strictes avant d'utiliser les secrets
+        if not webhook_secret or not isinstance(webhook_secret, str) or webhook_secret.strip() == "":
+            print("⚠️ STRIPE_WEBHOOK_SECRET non configuré ou invalide - webhook ignoré")
             # Retourner 200 pour éviter que Stripe réessaie indéfiniment
             return Response(
                 content='{"status": "skipped", "message": "Webhook secret non configuré"}',
@@ -728,8 +729,8 @@ async def stripe_webhook(request: Request):
                 headers={"Content-Type": "application/json"}
             )
         
-        if not stripe_secret_key:
-            print("⚠️ STRIPE_SECRET_KEY non configuré - webhook ignoré")
+        if not stripe_secret_key or not isinstance(stripe_secret_key, str) or stripe_secret_key.strip() == "":
+            print("⚠️ STRIPE_SECRET_KEY non configuré ou invalide - webhook ignoré")
             return Response(
                 content='{"status": "skipped", "message": "Stripe secret key non configuré"}',
                 status_code=200,
@@ -737,6 +738,10 @@ async def stripe_webhook(request: Request):
             )
         
         print(f"✅ STRIPE_WEBHOOK_SECRET trouvé: {webhook_secret[:10]}...")
+        
+        # S'assurer que webhook_secret est bien une chaîne
+        webhook_secret = str(webhook_secret).strip()
+        stripe_secret_key = str(stripe_secret_key).strip()
         
         stripe.api_key = stripe_secret_key
         
@@ -786,8 +791,15 @@ async def stripe_webhook(request: Request):
         return {"status": "success", "message": "Webhook reçu"}
         
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         print(f"❌ Erreur webhook: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur webhook: {str(e)}")
+        print(f"❌ Traceback: {error_trace}")
+        # Ne pas exposer la trace complète dans la réponse, juste le message
+        error_message = str(e)
+        if "Secret" in error_message and "NoneType" in error_message:
+            error_message = "Webhook secret manquant ou invalide. Vérifiez STRIPE_WEBHOOK_SECRET dans les variables d'environnement."
+        raise HTTPException(status_code=500, detail=f"Erreur webhook: {error_message}")
 
 @app.post("/extract-pdf", response_model=PDFExtractionResponse)
 async def extract_pdf(request: PDFExtractionRequest):
