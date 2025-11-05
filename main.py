@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
@@ -30,19 +30,39 @@ except ImportError:
 app = FastAPI(title="CV Bien API", version="6.1.0")
 
 # Configuration CORS
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173", 
+    "https://cvbien4.vercel.app",
+    "https://cvbien.vercel.app",
+    "https://cvbien.dev"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173", 
-        "https://cvbien4.vercel.app",
-        "https://cvbien.vercel.app",
-        "https://cvbien.dev"
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Route OPTIONS explicite pour gérer les preflight requests
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str, request: Request):
+    """Handler pour les requêtes OPTIONS (preflight)"""
+    origin = request.headers.get("origin")
+    if origin in ALLOWED_ORIGINS:
+        return JSONResponse(
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+            }
+        )
+    return JSONResponse(content={})
 
 # Configuration Firebase
 db = None
